@@ -1,0 +1,60 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { SidebarProvider } from "@/src/lib/sidebarContext";
+import { useAuth } from "@/src/hooks/useAuth";
+import DashboardLayout from "@/src/components/Company/DashboardLayout";
+
+export default function CompanyLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    if (hasRedirected.current || loading) return;
+
+    if (!isAuthenticated || !user) {
+      if (pathname !== "/auth") {
+        hasRedirected.current = true;
+        router.push("/auth");
+      }
+      return;
+    }
+    
+    if (user.role !== "COMPANY") {
+      if (!pathname.startsWith("/Student")) {
+        hasRedirected.current = true;
+        router.push("/Student/dashboard");
+      }
+      return;
+    }
+
+    hasRedirected.current = false;
+  }, [user, loading, isAuthenticated, router, pathname]);
+
+   // ✅ LOADING — SidebarProvider MUST exist
+  if (loading) {
+    return (
+      <SidebarProvider>
+        <DashboardLayout>
+          <div className="flex flex-1 items-center justify-center min-h-[calc(100vh-64px)]">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
+          </div>
+        </DashboardLayout>
+      </SidebarProvider>
+    );
+  }
+
+  if (!isAuthenticated || !user || user.role !== "COMPANY") {
+    return null;
+  }
+
+  // ✅ NORMAL RENDER
+  return (
+    <SidebarProvider>
+  {children}
+    </SidebarProvider>
+  );
+}

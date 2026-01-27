@@ -1,0 +1,425 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  COMPANY
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(STUDENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student Student?
+  company Company?
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Opportunity {
+  id                        String    @id @default(uuid())
+  title                     String
+  type                      String
+  timeLength                String
+  currency                  String
+  allowance                 String?
+  location                  String?
+  details                   String
+  skills                    String[]
+  whyYouWillLoveWorkingHere String[]
+  benefits                  String[]
+  keyResponsibilities       String[]
+  startDate                 DateTime?
+  applicantCount            Int       @default(0)
+  companyId                 String
+  company                   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contracts                 Contract[]
+  applications              Application[]
+  questions                 Question[]
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  @@map("opportunities")
+}
+
+model Contract {
+  id               String      @id @default(uuid())
+  contractTitle    String
+  name             String
+  email            String?
+  studentId        String?
+  opportunityId    String?
+  createdDate      DateTime    @default(now())
+  inContractNumber String
+  inContractList   String[]
+  currency         String
+  duration         String
+  monthlyAllowance Float
+  salary           Float?
+  workLocation     String
+  note             String?
+  status           String
+  companyId        String
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  student          Student?    @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  opportunity      Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  payments         Payment[]
+  reviews          Review[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@map("contracts")
+}
+
+model ContractTemplate {
+  id               String   @id @default(uuid())
+  name             String
+  contractTitle    String
+  content          String?
+  currency         String?
+  duration         String?
+  monthlyAllowance Float?
+  workLocation     String?
+  fields           Json?
+  status           String   @default("Active")
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("contract_templates")
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  applicantId      String?
+  applicantName    String
+  contractId       String?
+  transferId       String?
+  nextPayment      String
+  monthlyAllowance String
+  workLocation     String?
+  method           String?
+  note             String?
+  paymentStatus    String
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  studentId        String?
+  student          Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  contract         Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("payments")
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  fileName  String
+  fileUrl   String
+  fileType  String
+  fileSize  Float
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+}
+
+model Program {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("programs")
+}
+
+model Student {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  name             String
+  email            String   @unique
+  description      String?
+  image            String?
+  status           String   @default("active")
+  availability     String?  // "Hybrid", "Remote", "Onsite"
+  salaryExpectation Float?
+  profileRanking   Int?
+  profileComplete  Int      @default(0) // 0-100 percentage
+
+  // Relations
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills       StudentSkill[]
+  experiences  Experience[]
+  educations   Education[]
+  languages    Language[]
+  portfolios   Portfolio[]
+  applications Application[]
+  settings     StudentSettings?
+  addresses    Address[]
+  contracts    Contract[]
+  payments     Payment[]
+  reviews      Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("students")
+}
+
+model Skill {
+  id        String         @id @default(uuid())
+  name      String         @unique
+  students  StudentSkill[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("skills")
+}
+
+model StudentSkill {
+  studentId String
+  skillId   String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([studentId, skillId])
+  @@map("student_skills")
+}
+
+model Experience {
+  id          String  @id @default(uuid())
+  studentId   String
+  role        String
+  companyName String
+  startDate   String? // Store as string for flexibility (e.g., "2022", "2022-01")
+  endDate     String? // Store as string for flexibility (e.g., "2023", "2023-12", "Present")
+  description String?
+  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("experiences")
+}
+
+model Education {
+  id          String  @id @default(uuid())
+  studentId   String
+  name        String // University/Institution name
+  major       String // Field of study
+  startDate   String? // Store as string for flexibility (e.g., "2014", "2014-09")
+  endDate     String? // Store as string for flexibility (e.g., "2018", "2018-06", "Present")
+  description String?
+  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("educations")
+}
+
+model Language {
+  id        String  @id @default(uuid())
+  studentId String
+  name      String
+  level     String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("languages")
+}
+
+model Portfolio {
+  id        String  @id @default(uuid())
+  studentId String
+  name      String // e.g. GitHub, LinkedIn
+  link      String // URL
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("portfolios")
+}
+
+model Application {
+  id                String    @id @default(uuid())
+  studentId         String
+  opportunityId     String
+  status            String    @default("pending") // pending, accepted, rejected, withdrawn
+  appliedAt         DateTime  @default(now())
+  withdrawnAt       DateTime?
+  applicantEmail    String?
+  salaryExpectation Float?
+
+  // Relations
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  answers     ApplicationAnswer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, opportunityId])
+  @@map("applications")
+}
+
+model StudentSettings {
+  id         String  @id @default(uuid())
+  studentId  String  @unique
+  theme      String  @default("light") // light, dark
+  themeColor String  @default("#FFEB9C")
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("student_settings")
+}
+
+model Company {
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  name              String
+  industry          String?
+  website           String?
+  description       String?
+  logo              String?
+  address           String?
+  phoneNumber       String?
+  status            String             @default("Verified")
+  progress          Int                @default(0)
+  size              String?
+  foundedYear       Int?
+  location          String?
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunities     Opportunity[]
+  contracts         Contract[]
+  contractTemplates ContractTemplate[]
+  documents         Document[]
+  programs          Program[]
+  payments          Payment[]
+  reviews           Review[]
+  addresses         Address[]
+  settings          CompanySettings?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("companies")
+}
+
+model CompanySettings {
+  id         String  @id @default(uuid())
+  companyId  String  @unique
+  theme      String  @default("light")
+  themeColor String  @default("#FFEB9C")
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("company_settings")
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  studentId   String?
+  companyId   String?
+  name        String
+  tag         String
+  address     String
+  phoneNumber String
+  student     Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("addresses")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  studentId String
+  name      String
+  review    String
+  rating    Int
+  contractId String
+  companyId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  contract  Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model Question {
+  id            String      @id @default(uuid())
+  opportunityId String
+  question      String
+  type          String      // "text", "select", "checkbox", "rating"
+  options       String[]    // for select and checkbox types, empty array if not applicable
+  order         Int         @default(0)
+  isRequired    Boolean     @default(false)
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  answers       ApplicationAnswer[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("questions")
+}
+
+model ApplicationAnswer {
+  id            String      @id @default(uuid())
+  applicationId String
+  questionId    String
+  answer        String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  question      Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("application_answers")
+}
