@@ -1,6 +1,7 @@
 import prisma from '../../config/prisma.js'
 import logger from '../../utils/logger.js'
 import { requireCompany, checkResourceOwnership } from '../../utils/companyUtils.js'
+import { createNotification } from '../../utils/notificationService.js'
 
 export const getApplicationsForOpportunity = async (req, res) => {
   try {
@@ -287,6 +288,28 @@ export const updateApplicationStatus = async (req, res) => {
         }
       }
     })
+
+    if (updatedApplication.student && updatedApplication.student.id) {
+      prisma.student
+        .findUnique({
+          where: { id: updatedApplication.student.id },
+          select: { userId: true }
+        })
+        .then(student => {
+          if (!student || !student.userId) return
+          return createNotification({
+            userId: student.userId,
+            type: 'APPLICATION_STATUS_UPDATED',
+            title: 'Application status updated',
+            message: `Your application for ${updatedApplication.opportunity?.title || 'an opportunity'} was ${status}`
+          })
+        })
+        .catch(notificationError => {
+          logger.error('update_application_status_notification_error', {
+            error: notificationError.message
+          })
+        })
+    }
 
     return res.status(200).json({
       status: 'success',

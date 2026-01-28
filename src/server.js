@@ -15,6 +15,8 @@ import companyAddressRoutes from './routes/company/address.js'
 import companyQuestionRoutes from './routes/company/question.js'
 import companyApplicationRoutes from './routes/company/application.js'
 import companyReviewRoutes from './routes/company/review.js'
+import companyTopApplicantRoutes from './routes/company/topApplicant.js'
+import companyTopCompanyRoutes from './routes/company/topCompany.js'
 import studentProfileRoutes from './routes/student/profile.js'
 import studentSkillRoutes from './routes/student/skill.js'
 import studentExperienceRoutes from './routes/student/experience.js'
@@ -29,6 +31,8 @@ import studentAddressRoutes from './routes/student/address.js'
 import studentPaymentRoutes from './routes/student/payment.js'
 import studentReviewRoutes from './routes/student/review.js'
 import studentDashboardRoutes from './routes/student/dashboard.js'
+import studentNotificationRoutes from './routes/student/notification.js'
+import companyNotificationRoutes from './routes/company/notification.js'
 import uploadRoutes from './routes/upload.js'
 import { requestLogger } from './middleware/requestLogger.js'
 import logger from './utils/logger.js'
@@ -72,6 +76,8 @@ app.use('/api/company', companyAddressRoutes)
 app.use('/api/company', companyQuestionRoutes)
 app.use('/api/company', companyApplicationRoutes)
 app.use('/company', companyReviewRoutes)
+app.use('/api/company', companyTopApplicantRoutes)
+app.use('/api/company', companyTopCompanyRoutes)
 app.use('/api/student', studentProfileRoutes)
 app.use('/api/student', studentSkillRoutes)
 app.use('/api/student', studentExperienceRoutes)
@@ -86,6 +92,8 @@ app.use('/api/student', studentAddressRoutes)
 app.use('/api/student', studentPaymentRoutes)
 app.use('/api/student', studentReviewRoutes)
 app.use('/api/student', studentDashboardRoutes)
+app.use('/api/student', studentNotificationRoutes)
+app.use('/api/company', companyNotificationRoutes)
 app.use('/api/upload', uploadRoutes)
 
 app.listen(PORT, () => {

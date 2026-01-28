@@ -1,6 +1,7 @@
 import prisma from '../../config/prisma.js'
 import logger from '../../utils/logger.js'
 import { requireStudent } from '../../utils/studentUtils.js'
+import { createNotification } from '../../utils/notificationService.js'
 
 export const createReview = async (req, res) => {
   try {
@@ -65,6 +66,29 @@ export const createReview = async (req, res) => {
         companyId: contract.companyId
       }
     })
+
+    prisma.company
+      .findUnique({
+        where: { id: contract.companyId },
+        select: {
+          id: true,
+          userId: true
+        }
+      })
+      .then((company) => {
+        if (!company || !company.userId) return
+        return createNotification({
+          userId: company.userId,
+          type: 'REVIEW_RECEIVED',
+          title: 'New review received',
+          message: `${student.name} left a ${parseInt(rating)}-star review for contract "${contract.contractTitle || 'your contract'}"`
+        })
+      })
+      .catch((notificationError) => {
+        logger.error('create_review_notification_error', {
+          error: notificationError.message
+        })
+      })
 
     return res.status(201).json({
       status: 'success',

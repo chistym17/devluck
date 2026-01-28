@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { SidebarProvider } from "@/src/lib/sidebarContext";
 import { useAuth } from "@/src/hooks/useAuth";
-import DashboardLayout from "@/src/components/Company/DashboardLayout";
+import DashboardLayout from "@/src/components/Student/DashboardLayout";
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();

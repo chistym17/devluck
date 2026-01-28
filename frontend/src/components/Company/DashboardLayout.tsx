@@ -1,13 +1,52 @@
 "use client";
 
-import { useEffect,useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import LeftSidebar from "@/src/components/Company/LeftSidebar";
 import { useSidebar } from "@/src/lib/sidebarContext";
+import { useNotificationPoller } from "@/src/hooks/useNotificationPoller";
+import { useCompanyNotificationHandler } from "@/src/hooks/companyapihandler/useCompanyNotificationHandler";
+import { NotificationToastContainer } from "@/src/components/common/NotificationToast";
+import { useAuth } from "@/src/hooks/useAuth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
+  const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [toastNotifications, setToastNotifications] = useState<Array<{
+    id: string
+    title: string
+    message: string
+    type?: string
+  }>>([]);
+
+  const isCompany = user?.role === "COMPANY";
+  const { listNotifications } = useCompanyNotificationHandler();
+
+  const fetchNotifications = useCallback(async () => {
+    const response = await listNotifications(1, 5);
+    return response.items;
+  }, [listNotifications]);
+
+  const handleNewNotification = useCallback((notification: any) => {
+    setToastNotifications(prev => [...prev, {
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type
+    }]);
+  }, []);
+
+  const handleRemoveToast = useCallback((id: string) => {
+    setToastNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  useNotificationPoller({
+    fetchNotifications,
+    onNewNotification: handleNewNotification,
+    interval: 30000,
+    enabled: isCompany
+  });
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -17,7 +56,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   return (
-    <div className="app-container flex">
+    <>
+      <NotificationToastContainer
+        notifications={toastNotifications}
+        onRemove={handleRemoveToast}
+      />
+      <div className="app-container flex">
        {/* Mobile hamburger (GLOBAL) */}
         {isMobile && (
           <button
@@ -66,5 +110,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </main>
     </div>
+    </>
   );
 }

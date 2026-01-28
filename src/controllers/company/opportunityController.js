@@ -1,5 +1,7 @@
 import prisma from '../../config/prisma.js'
 import { requireCompany, checkResourceOwnership } from '../../utils/companyUtils.js'
+import { createNotification } from '../../utils/notificationService.js'
+import logger from '../../utils/logger.js'
 
 export const createOpportunity = async (req, res) => {
   try {
@@ -268,8 +270,42 @@ export const deleteOpportunity = async (req, res) => {
       })
     }
 
+    const applications = await prisma.application.findMany({
+      where: { opportunityId: id },
+      include: {
+        student: {
+          select: {
+            id: true,
+            userId: true
+          }
+        }
+      }
+    })
+
     await prisma.opportunity.delete({
       where: { id }
+    })
+
+    const notificationPromises = applications
+      .filter(app => app.student && app.student.userId)
+      .map(app => 
+        createNotification({
+          userId: app.student.userId,
+          type: 'OPPORTUNITY_DELETED',
+          title: 'Opportunity removed',
+          message: `The opportunity "${exists.title}" you applied for has been removed by the company.`
+        }).catch(error => {
+          logger.error('opportunity_deletion_notification_error', {
+            error: error.message,
+            applicationId: app.id
+          })
+        })
+      )
+
+    Promise.all(notificationPromises).catch(error => {
+      logger.error('opportunity_deletion_notifications_batch_error', {
+        error: error.message
+      })
     })
 
     return res.status(200).json({

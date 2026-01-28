@@ -8,14 +8,14 @@ interface NotificationsCardProps {
   type: string;
   message: string;
   read: boolean;
-  created_at?: string;
+  createdAt?: string;
   user_id: string;
   onOpenPopup: (notification: {
     id: string;
     title: string;
     message: string;
     read: boolean;
-    created_at?: string;
+    createdAt?: string;
     user_id: string;
   }) => void;
 }
@@ -26,7 +26,7 @@ export default function NotificationsCard({
   message,
   read,
   type,
-  created_at,
+  createdAt,
   user_id,
   onOpenPopup,
 }: NotificationsCardProps) {
@@ -42,7 +42,7 @@ export default function NotificationsCard({
       title,
       message,
       read,
-      created_at,
+      createdAt,
       user_id,
     });
   };
@@ -90,7 +90,7 @@ export default function NotificationsCard({
             </span>
 
             <span className="text-xs text-gray-400 flex items-center">
-              <span>{formatDate(created_at)}</span>
+              <span>{formatDate(createdAt)}</span>
               <span className="mx-1">•</span>
               <span className="capitalize">{type}</span>
             </span>

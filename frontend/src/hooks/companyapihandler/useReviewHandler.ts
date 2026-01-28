@@ -21,7 +21,7 @@ interface UseReviewHandlerReturn {
   review: Review | null
   loading: boolean
   error: string | null
-  getReviews: () => Promise<Review[]>
+  getReviews: (companyId?: string) => Promise<Review[]>
   clearError: () => void
 }
 
@@ -35,11 +35,14 @@ export const useReviewHandler = (): UseReviewHandlerReturn => {
     setError(null)
   }, [])
 
-  const getReviews = useCallback(async (): Promise<Review[]> => {
+  const getReviews = useCallback(async (companyId?: string): Promise<Review[]> => {
     setLoading(true)
     setError(null)
     try {
-      const response = await api.get<{ status: string; data: Review[] }>('/company/reviews')
+      const url = companyId 
+        ? `/company/reviews?companyId=${companyId}`
+        : '/company/reviews'
+      const response = await api.get<{ status: string; data: Review[] }>(url)
       setReviews(response.data.data)
       return response.data.data
     } catch (err: any) {

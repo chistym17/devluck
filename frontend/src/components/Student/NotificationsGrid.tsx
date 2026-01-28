@@ -1,49 +1,32 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import NotificationsCard from "./NotificationsCard";
-import type { Notification } from "../../mocks/notifications.mock";
-import { mockNotifications } from "../../mocks/notifications.mock";
-import { createPortal } from "react-dom"; // For centered modal popup
+import type { Notification } from "../../hooks/studentapihandler/useStudentNotificationHandler";
+import { useStudentNotificationHandler } from "../../hooks/studentapihandler/useStudentNotificationHandler";
+import { createPortal } from "react-dom";
 import NotificationsCardSkeleton from "./NotificationsCardSkeleton";
 
 
 export default function NotificationsGrid() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    notifications,
+    loading,
+    error,
+    listNotifications,
+    markAsRead: markAsReadAPI,
+    markAllAsRead: markAllAsReadAPI,
+    clearError
+  } = useStudentNotificationHandler();
 
-  /** 🧠 Simulate fetching (mock API delay) */
-    useEffect(() => {
-    setLoading(true);
+  useEffect(() => {
+    listNotifications(1, 100).catch((err) => {
+      console.error('Failed to load notifications:', err);
+    });
+  }, [listNotifications]);
 
-    const timer = setTimeout(() => {
-        setNotifications(mockNotifications);
-        setLoading(false);
-      }, 600); // fake API delay
-
-      return () => clearTimeout(timer);
-    }, []);
-
-    const markAsRead = async (id: string) => {
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, read: true } : n
-        )
-      );
-    };
-
-    const markAllAsRead = async () => {
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, read: true }))
-      );
-    };
-
-  // Filters: Only read/unread (top clickable labels – no search/multi-select)
-  const [selectedReadStatus, setSelectedReadStatus] = useState<string>(""); // "" = All, "read" = read only, "unread" = unread only
-
-  // Pagination
+  const [selectedReadStatus, setSelectedReadStatus] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(5);
 
   // Popup state (for card click)
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -90,10 +73,13 @@ export default function NotificationsGrid() {
   const handleMarkAsReadInPopup = async () => {
     if (!selectedNotification?.id) return;
 
-    await markAsRead(selectedNotification.id);
-
-    setIsPopupOpen(false);
-    setSelectedNotification(null);
+    try {
+      await markAsReadAPI(selectedNotification.id);
+      setIsPopupOpen(false);
+      setSelectedNotification(null);
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
   };
 
 
@@ -112,9 +98,12 @@ export default function NotificationsGrid() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isPopupOpen]);
 
-  /** Mark All as Read (footer button) */
   const handleMarkAllAsRead = async () => {
-    await markAllAsRead();
+    try {
+      await markAllAsReadAPI();
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
   };
 
 
@@ -229,7 +218,7 @@ export default function NotificationsGrid() {
                 title={notification.title}
                 message={notification.message}
                 read={notification.read}
-                created_at={notification.created_at}
+                createdAt={notification.createdAt}
                 user_id={notification.user_id}
                 onOpenPopup={() => handleOpenPopup(notification)}
               />
@@ -303,7 +292,7 @@ export default function NotificationsGrid() {
               {/* Type and Date */}
               <div className="flex gap-4 text-gray-600 text-sm">
                 <span>Type: <strong>{selectedNotification.type}</strong></span>
-                <span>Date: <strong>{new Date(selectedNotification.created_at).toLocaleString()}</strong></span>
+                <span>Date: <strong>{new Date(selectedNotification.createdAt).toLocaleString()}</strong></span>
                 {selectedNotification.read && (
                   <span className="inline-block px-4 py-1 bg-green-100 text-green-700 font-semibold rounded-lg skew-x-[-12deg]">
                     <span className="inline-block skew-x-[12deg]">

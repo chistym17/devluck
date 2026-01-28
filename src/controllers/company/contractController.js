@@ -1,6 +1,7 @@
 import prisma from '../../config/prisma.js'
 import logger from '../../utils/logger.js'
 import { requireCompany, checkResourceOwnership } from '../../utils/companyUtils.js'
+import { createNotification } from '../../utils/notificationService.js'
 
 export const listContracts = async (req, res) => {
   try {
@@ -149,6 +150,15 @@ export const createContract = async (req, res) => {
         studentId: user.student.id,
         opportunityId: opportunityId || null
       }
+    })
+
+    createNotification({
+      userId: user.id,
+      type: 'CONTRACT_CREATED',
+      title: 'New contract created',
+      message: `A contract "${contractTitle}" has been created for you`
+    }).catch(error => {
+      logger.error('create_contract_notification_error', { error: error.message })
     })
 
     return res.status(201).json({
@@ -322,6 +332,26 @@ export const updateContract = async (req, res) => {
     console.log('Contract updated successfully')
     console.log('Updated contract:', JSON.stringify(contract, null, 2))
 
+    if (contract.studentId) {
+      prisma.student
+        .findUnique({
+          where: { id: contract.studentId },
+          select: { userId: true }
+        })
+        .then(student => {
+          if (!student || !student.userId) return
+          return createNotification({
+            userId: student.userId,
+            type: 'CONTRACT_UPDATED',
+            title: 'Contract updated',
+            message: `Your contract "${contract.contractTitle}" has been updated${status !== undefined ? ` - Status: ${status}` : ''}`
+          })
+        })
+        .catch(error => {
+          logger.error('update_contract_notification_error', { error: error.message })
+        })
+    }
+
     console.log('=== UPDATE CONTRACT API SUCCESS ===')
     return res.status(200).json({
       status: 'success',
@@ -364,6 +394,26 @@ export const deleteContract = async (req, res) => {
         status: 'error',
         message: ownershipCheck.error.message
       })
+    }
+
+    if (exists.studentId) {
+      prisma.student
+        .findUnique({
+          where: { id: exists.studentId },
+          select: { userId: true }
+        })
+        .then(student => {
+          if (!student || !student.userId) return
+          return createNotification({
+            userId: student.userId,
+            type: 'CONTRACT_DELETED',
+            title: 'Contract deleted',
+            message: `Contract "${exists.contractTitle}" has been deleted`
+          })
+        })
+        .catch(error => {
+          logger.error('delete_contract_notification_error', { error: error.message })
+        })
     }
 
     await prisma.contract.delete({

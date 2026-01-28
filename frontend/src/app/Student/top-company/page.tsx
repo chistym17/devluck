@@ -1,9 +1,9 @@
 // src/app/Student/top-company/page.tsx
 "use client";
 import { useRouter } from "next/navigation";
-import { useState, useMemo,useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/src/components/Student/DashboardLayout";
-import { mockCompanies } from "@/src/mocks/mockCompanies";
+import { useTopCompanyHandler, type TopCompany } from "@/src/hooks/companyapihandler/useTopCompanyHandler";
 import { ArrowUpRight } from 'lucide-react';
 
 /* ──────────────────────────────────────────────
@@ -132,7 +132,7 @@ const CompanyCard = ({
   company,
   onClick,
 }: {
-  company: typeof mockCompanies[0];
+  company: TopCompany;
   onClick?: () => void;
 }) => {
   return (
@@ -232,9 +232,9 @@ const CompanyCard = ({
           zIndex: 2,
         }}
       >
-        {company.image ? (
+        {(company.logo || company.image) ? (
           <img
-            src={company.image}
+            src={company.logo || company.image || "/default-company.png"}
             alt={company.name}
             style={{
               width: "100%",
@@ -384,7 +384,7 @@ const CompanyCard = ({
           </div>
           {/* Text */}
           <span className="font-bold text-[14px] skew-x-[12deg] leading-[24px] text-[#1E1E1E]">
-            # {company.id}
+            #{company.id.startsWith('C') ? company.id : `C${company.id.slice(0, 4)}`}
           </span>
         </div>
       </div>
@@ -402,7 +402,7 @@ const CompanyCard = ({
 };
 
 type CompanyRowProps = {
-  company: typeof mockCompanies[0];
+  company: TopCompany;
   onMainClick?: () => void;
   onSideClick?: () => void;
   showCheckbox?: boolean;
@@ -462,7 +462,7 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
         <div className="flex-1 flex items-center skew-x-[12deg] h-full px-4 gap-6">
           {/* Company ID */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">CO-ID-{company.id}</span>
+            <span className="text-sm font-semibold text-gray-900">CO-ID-{company.id.startsWith('C') ? company.id : `C${company.id.slice(0, 4)}`}</span>
             <span className="text-xs text-gray-400">Company ID</span>
           </div>
           {/* Company Name */}
@@ -478,7 +478,7 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
 
           {/* Company City */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{company.city}</span>
+            <span className="text-sm font-semibold text-gray-900">{company.location || company.addresses?.[0]?.address || "N/A"}</span>
             <span className="text-xs text-gray-400">Company City</span>
           </div>
 
@@ -490,7 +490,7 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
           
           {/* Employee Number */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{company.employeeNumber}</span>
+            <span className="text-sm font-semibold text-gray-900">{company.contractsCount || 0}</span>
             <span className="text-xs text-gray-400">Employee Number</span>
           </div>
 
@@ -525,29 +525,36 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
 };
 
 export default function TopCompanyPage() {
- 
-        //---------------------filter----------------------------------
-         const [showCompanies, setShowCompanies] = useState(true);
-         const router = useRouter();
-         const [searchQuery, setSearchQuery] = useState("");
-         const [currentPage, setCurrentPage] = useState(1);
+  const [showCompanies, setShowCompanies] = useState(true);
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const { topCompanies, loading, error, getTopCompanies } = useTopCompanyHandler();
 
-     
-         // 🔍 Filter Companies
-         const filteredCompanies = useMemo(() => {
-           return mockCompanies.filter(applicant => {
-             // Search filter
-             const searchMatch =
-               !searchQuery.trim() ||
-               applicant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.id.toLowerCase().includes(searchQuery.toLowerCase());
- 
-             return searchMatch;
-           });
-         }, [searchQuery]);
+  useEffect(() => {
+    getTopCompanies(1, 100).catch((err) => {
+      console.error('Failed to load top companies:', err);
+    });
+  }, [getTopCompanies]);
+
+  const filteredCompanies = useMemo(() => {
+    if (!topCompanies || topCompanies.length === 0) return [];
+    
+    return topCompanies.filter(company => {
+      const searchMatch =
+        !searchQuery.trim() ||
+        company.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.phoneNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (company.addresses && company.addresses.some(addr => 
+          addr.address?.toLowerCase().includes(searchQuery.toLowerCase())
+        ));
+  
+      return searchMatch;
+    });
+  }, [topCompanies, searchQuery]);
      
      
          
@@ -588,18 +595,18 @@ export default function TopCompanyPage() {
            if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
          };
 
-        const totalCompanies = mockCompanies.length;
+        const totalCompanies = topCompanies.length;
 
-        const verifiedCompanies = mockCompanies.filter(
+        const verifiedCompanies = topCompanies.filter(
           (company) => company.status === "Verified"
         ).length;
 
-        const pendingCompanies = mockCompanies.filter(
+        const pendingCompanies = topCompanies.filter(
           (company) => company.status === "Pending"
         ).length;
 
-        const totalEmployees = mockCompanies.reduce(
-          (sum, company) => sum + company.employeeNumber,
+        const totalContracts = topCompanies.reduce(
+          (sum, company) => sum + (company.contractsCount || 0),
           0
         );
 
@@ -634,8 +641,8 @@ export default function TopCompanyPage() {
 
             <Card
               title="Total Employees"
-              value={totalEmployees.toLocaleString()}
-              subtitle="Across all companies"
+              value={totalContracts.toLocaleString()}
+              subtitle="All available contracts"
             />
           </div>
 

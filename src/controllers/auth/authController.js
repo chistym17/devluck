@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '../../config/prisma.js'
 import logger from '../../utils/logger.js'
+import { createNotification } from '../../utils/notificationService.js'
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h'
 
@@ -85,6 +86,17 @@ export const signup = async (req, res) => {
           }
         })
       }
+    })
+
+    createNotification({
+      userId: user.id,
+      type: 'WELCOME',
+      title: 'Welcome to DevLuck!',
+      message: userRole === 'STUDENT' 
+        ? 'Welcome! Complete your profile to get started and discover amazing opportunities.'
+        : 'Welcome! Complete your company profile to start posting opportunities and finding talent.'
+    }).catch(error => {
+      logger.error('welcome_notification_error', { error: error.message })
     })
 
     const token = generateToken(user)

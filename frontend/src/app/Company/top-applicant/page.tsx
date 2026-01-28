@@ -2,7 +2,7 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/src/components/Company/DashboardLayout";
-import { mockApplicants } from "@/src/mocks/mockApplicants";
+import { useTopApplicantHandler } from "@/src/hooks/companyapihandler/useTopApplicantHandler";
 import { useState, useMemo, useRef, useEffect } from "react";
 // =======================
 // APPLIED STUDENT CARD COMPONENT
@@ -160,60 +160,94 @@ const AppliedStudentCard = ({
 
 
 export default function TopApplicantPage() {
-  
   const router = useRouter();
+  const { topApplicants, loading, error, getTopApplicants } = useTopApplicantHandler();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const filteredApplicants = useMemo(() => {
-        return mockApplicants.filter(applicant => {
-          // Search filter
-          const searchMatch =
-            !searchQuery.trim() ||
-            applicant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.applicantId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.contractTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.startDate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.endDate.toLowerCase().includes(searchQuery.toLowerCase());
-          return searchMatch ;
-        });
-      }, [searchQuery]);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // 📄 Pagination
-  const [itemsPerPage, setItemsPerPage] = useState(10); // default 10 for desktop
-  
+  useEffect(() => {
+    getTopApplicants(1, 100, searchQuery).catch((err) => {
+      console.error('Failed to load top applicants:', err);
+    });
+  }, [getTopApplicants, searchQuery]);
+
   useEffect(() => {
     const updateItemsPerPage = () => {
-              if (window.innerWidth < 640) { // mobile
-                setItemsPerPage(6);
-              } else {
-                setItemsPerPage(10); // desktop
-              }
+      if (window.innerWidth < 640) {
+        setItemsPerPage(6);
+      } else {
+        setItemsPerPage(10);
+      }
     };
-    updateItemsPerPage(); // run once on mount
-    window.addEventListener("resize", updateItemsPerPage); // run on resize
-  
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
     return () => window.removeEventListener("resize", updateItemsPerPage);
   }, []);
-  
-       
+
+  const filteredApplicants = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return topApplicants;
+    }
+    const searchLower = searchQuery.toLowerCase();
+    return topApplicants.filter(applicant =>
+      applicant.name?.toLowerCase().includes(searchLower) ||
+      applicant.id?.toLowerCase().includes(searchLower) ||
+      applicant.email?.toLowerCase().includes(searchLower)
+    );
+  }, [topApplicants, searchQuery]);
+
   const totalPages = Math.ceil(filteredApplicants.length / itemsPerPage);
-  
   const paginatedApplicants = filteredApplicants.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
+
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
-  
+
   const goToPrevious = () => {
     if (currentPage > 1) setCurrentPage(prev => prev - 1);
   };
-  
+
   const goToNext = () => {
-  if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+    if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  if (loading && topApplicants.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <h1 className="text-[28px] font-bold text-[#1E1E1E] mb-8">
+            Top Applicants
+          </h1>
+          <div className="flex justify-center py-10">
+            <p className="text-gray-500">Loading applicants...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error && topApplicants.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <h1 className="text-[28px] font-bold text-[#1E1E1E] mb-8">
+            Top Applicants
+          </h1>
+          <div className="flex justify-center py-10 text-red-500">
+            Error: {error}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -225,15 +259,21 @@ export default function TopApplicantPage() {
             APPLIED STUDENTS GRID
         ======================== */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-6 justify-items-center ">
-          {paginatedApplicants.map((applicant, index) => (
-            <AppliedStudentCard
-              key={applicant.applicantId}
-              studentName={applicant.name}
-              studentNumber={applicant.applicantId}
-              imageUrl={applicant.image} // 👈 backend-ready
-              onClick={() => router.push(`/Company/top-applicant/${applicant.applicantId}`)}
-            />
-          ))}
+          {paginatedApplicants.length === 0 ? (
+            <div className="col-span-full text-center py-10 text-gray-500">
+              No applicants found
+            </div>
+          ) : (
+            paginatedApplicants.map((applicant, index) => (
+              <AppliedStudentCard
+                key={applicant.id}
+                studentName={applicant.name || 'Unknown'}
+                studentNumber={String((currentPage - 1) * itemsPerPage + index + 1)}
+                imageUrl={applicant.image || undefined}
+                onClick={() => router.push(`/Company/top-applicant/${applicant.id}`)}
+              />
+            ))
+          )}
         </div>
       </div>
       {totalPages > 1 && (

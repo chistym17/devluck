@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '../../config/prisma.js'
 import logger from '../../utils/logger.js'
 import { requireStudent } from '../../utils/studentUtils.js'
+import { createNotification } from '../../utils/notificationService.js'
 
 export const getSettings = async (req, res) => {
   try {
@@ -112,6 +113,15 @@ export const changePassword = async (req, res) => {
     await prisma.user.update({
       where: { id: req.user.id },
       data: { passwordHash }
+    })
+
+    createNotification({
+      userId: req.user.id,
+      type: 'PASSWORD_CHANGED',
+      title: 'Password changed',
+      message: 'Your password was changed successfully. If this wasn\'t you, please secure your account immediately.'
+    }).catch(error => {
+      logger.error('password_change_notification_error', { error: error.message })
     })
 
     return res.status(200).json({

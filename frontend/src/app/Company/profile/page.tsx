@@ -12,6 +12,7 @@ import { useProgramHandler } from "@/src/hooks/companyapihandler/useProgramHandl
 import { useReviewHandler } from "@/src/hooks/companyapihandler/useReviewHandler";
 import { api } from "@/src/lib/api";
 import { Toast } from "@/src/components/common/Toast";
+import { mockApplicants } from "@/src/mocks/mockApplicants";
 
 
 interface ClipImageProps {
@@ -72,20 +73,11 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
 };
 
 
-type EmployeeApplicant = {
-    student: {
-        id: string;
-        name: string | null;
-        profileComplete?: number | null;
-        image?: string | null;
-    };
-};
-
 const ApplicantCard = ({
     applicant,
     onClick,
 }: {
-    applicant: EmployeeApplicant;
+    applicant: typeof mockApplicants[0];
     onClick?: () => void;
 }) => {
     return (
@@ -467,7 +459,7 @@ const ApplicantCard = ({
                 }}
             >
                 <ClipImage
-                    src={applicant.student?.image || "/avatars/nina.jpeg"}
+                    src={applicant.image1}
                     width={239}
                     height={271}
                 />
@@ -628,7 +620,7 @@ const ApplicantCard = ({
                     alignItems: "center",
                 }}
             >
-                {(" ").split("").map((char, index) => (
+                {applicant.city.split("").map((char, index) => (
                     <span key={index}>{char}</span>
                 ))}
             </div>
@@ -704,7 +696,7 @@ const ApplicantCard = ({
                         marginBottom: "-8px",
                     }}
                 >
-                {applicant.student?.name || ""}
+                    {applicant.name}
                 </div>
 
                 {/* Last Name */}
@@ -718,7 +710,7 @@ const ApplicantCard = ({
                         textAlign: "center",
                     }}
                 >
-                {applicant.student?.name || ""}
+                    {applicant.name}
                 </div>
             </div>
 
@@ -738,7 +730,8 @@ const ApplicantCard = ({
                     color: 'rgba(23, 23, 23, 0.48)',
                 }}
             >
-                {applicant.student?.profileComplete ?? 0}%
+                {applicant.profileComplete}%
+
             </div>
         </div>
     );
@@ -2194,9 +2187,7 @@ export default function TopCompanyPage() {
                                     </div>
                                     {/* Address Label */}
                                     <span className="text-[14px] leading-[22px] text-[#1E1E1E]">
-                                        {profile?.addresses && profile.addresses.length > 0
-                                            ? profile.addresses.map(a => a.address).join(', ')
-                                            : "Add to complete your profile"}
+                                        {profile?.addresses?.[0]?.address || "Add to complete your profile"}
                                     </span>
                                 </div>
 
@@ -2211,9 +2202,7 @@ export default function TopCompanyPage() {
                                     </div>
                                     {/* Phone Label */}
                                     <span className="text-[14px] leading-[22px] text-[#1E1E1E]">
-                                        {profile?.addresses && profile.addresses.length > 0
-                                            ? profile.addresses.map(a => a.phoneNumber).join(', ')
-                                            : "Add to complete your profile"}
+                                        {profile?.addresses?.[0]?.phoneNumber || "Add to complete your profile"}
                                     </span>
                                 </div>
                             </div>

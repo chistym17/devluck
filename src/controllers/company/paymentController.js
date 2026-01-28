@@ -1,6 +1,7 @@
 import prisma from '../../config/prisma.js'
 import { requireCompany } from '../../utils/companyUtils.js'
 import logger from '../../utils/logger.js'
+import { createNotification } from '../../utils/notificationService.js'
 
 export const listPayments = async (req, res) => {
   try {
@@ -119,6 +120,26 @@ export const createPayment = async (req, res) => {
       }
     })
 
+    if (resolvedStudentId) {
+      prisma.student
+        .findUnique({
+          where: { id: resolvedStudentId },
+          select: { userId: true }
+        })
+        .then(student => {
+          if (!student || !student.userId) return
+          return createNotification({
+            userId: student.userId,
+            type: 'PAYMENT_CREATED',
+            title: 'New payment created',
+            message: `A payment of ${monthlyAllowance} has been created for you (Status: ${paymentStatus})`
+          })
+        })
+        .catch(error => {
+          logger.error('create_payment_notification_error', { error: error.message })
+        })
+    }
+
     return res.status(201).json({
       status: 'success',
       data: payment
@@ -207,6 +228,27 @@ export const updatePayment = async (req, res) => {
       where: { id },
       data: updateData
     })
+
+    const finalStudentId = resolvedStudentId || payment.studentId
+    if (finalStudentId && paymentStatus !== payment.paymentStatus) {
+      prisma.user
+        .findFirst({
+          where: { studentId: finalStudentId },
+          select: { id: true }
+        })
+        .then(user => {
+          if (!user) return
+          return createNotification({
+            userId: user.id,
+            type: 'PAYMENT_STATUS_UPDATED',
+            title: 'Payment status updated',
+            message: `Your payment status has been updated to "${paymentStatus}"${monthlyAllowance ? ` (Amount: ${monthlyAllowance})` : ''}`
+          })
+        })
+        .catch(error => {
+          logger.error('update_payment_notification_error', { error: error.message })
+        })
+    }
 
     return res.status(200).json({
       status: 'success',

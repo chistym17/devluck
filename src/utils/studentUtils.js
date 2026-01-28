@@ -1,4 +1,6 @@
 import prisma from '../config/prisma.js'
+import { createNotification } from './notificationService.js'
+import logger from './logger.js'
 
 export const getStudentFromUser = async (userId) => {
   const student = await prisma.student.findUnique({
@@ -83,11 +85,44 @@ export const calculateProfileComplete = async (studentId) => {
 }
 
 export const updateProfileComplete = async (studentId) => {
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { profileComplete: true, userId: true }
+  })
+
+  if (!student) return 0
+
+  const oldProfileComplete = student.profileComplete || 0
   const profileComplete = await calculateProfileComplete(studentId)
+  
   await prisma.student.update({
     where: { id: studentId },
     data: { profileComplete }
   })
+
+  const milestones = [25, 50, 75, 100]
+  const crossedMilestone = milestones.find(milestone => 
+    oldProfileComplete < milestone && profileComplete >= milestone
+  )
+
+  if (crossedMilestone) {
+    const messages = {
+      25: "Great start! Your profile is 25% complete. Keep adding details to stand out!",
+      50: "Halfway there! Your profile is 50% complete. You're making great progress!",
+      75: "Almost there! Your profile is 75% complete. Just a few more details!",
+      100: "Congratulations! Your profile is 100% complete. You're all set to discover amazing opportunities!"
+    }
+
+    createNotification({
+      userId: student.userId,
+      type: 'PROFILE_MILESTONE',
+      title: 'Profile milestone reached!',
+      message: messages[crossedMilestone]
+    }).catch(error => {
+      logger.error('profile_milestone_notification_error', { error: error.message })
+    })
+  }
+
   return profileComplete
 }
 

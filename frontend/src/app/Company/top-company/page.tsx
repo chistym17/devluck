@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useMemo,useEffect } from "react";
 import DashboardLayout from "@/src/components/Company/DashboardLayout";
-import { mockCompanies } from "@/src/mocks/mockCompanies";
+import { useTopCompanyHandler } from "@/src/hooks/companyapihandler/useTopCompanyHandler";
 import { ArrowUpRight } from 'lucide-react';
 
 /* ──────────────────────────────────────────────
@@ -132,7 +132,23 @@ const CompanyCard = ({
   company,
   onClick,
 }: {
-  company: typeof mockCompanies[0];
+  company: {
+    id: string;
+    name: string;
+    image?: string | null;
+    logo?: string | null;
+    location?: string | null;
+    address?: string | null;
+    phoneNumber?: string | null;
+    status?: string | null;
+    addresses?: Array<{
+      id: string;
+      name?: string;
+      tag?: string;
+      address?: string;
+      phoneNumber?: string;
+    }>;
+  };
   onClick?: () => void;
 }) => {
   return (
@@ -232,9 +248,9 @@ const CompanyCard = ({
           zIndex: 2,
         }}
       >
-        {company.image ? (
+        {(company.image || company.logo) ? (
           <img
-            src={company.image}
+            src={company.image || company.logo || ''}
             alt={company.name}
             style={{
               width: "100%",
@@ -314,7 +330,7 @@ const CompanyCard = ({
 
             </div>
             <div className="flex flex-col justify-center">
-              <span className="text-[14px] text-[#1E1E1E]">rafah</span>
+              <span className="text-[14px] text-[#1E1E1E]">{company.location || company.addresses?.[0]?.address || 'N/A'}</span>
               <span className="text-[12px] text-black/56">Location</span>
             </div>
           </div>
@@ -384,7 +400,7 @@ const CompanyCard = ({
           </div>
           {/* Text */}
           <span className="font-bold text-[14px] skew-x-[12deg] leading-[24px] text-[#1E1E1E]">
-            # {company.id}
+            #{company.id.startsWith('C') ? company.id : `C${company.id.slice(0, 4)}`}
           </span>
         </div>
       </div>
@@ -402,7 +418,21 @@ const CompanyCard = ({
 };
 
 type CompanyRowProps = {
-  company: typeof mockCompanies[0];
+  company: {
+    id: string;
+    name: string;
+    phoneNumber?: string | null;
+    location?: string | null;
+    address?: string | null;
+    status?: string | null;
+    addresses?: Array<{
+      id: string;
+      name?: string;
+      tag?: string;
+      address?: string;
+      phoneNumber?: string;
+    }>;
+  };
   onMainClick?: () => void;
   onSideClick?: () => void;
   showCheckbox?: boolean;
@@ -462,7 +492,7 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
         <div className="flex-1 flex items-center skew-x-[12deg] h-full px-4 gap-6">
           {/* Company ID */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">CO-ID-{company.id}</span>
+            <span className="text-sm font-semibold text-gray-900">CO-ID-{company.id.startsWith('C') ? company.id : `C${company.id.slice(0, 4)}`}</span>
             <span className="text-xs text-gray-400">Company ID</span>
           </div>
           {/* Company Name */}
@@ -476,10 +506,10 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
             <span className="text-xs text-gray-400">Phone Number</span>
           </div>
 
-          {/* Company City */}
+          {/* Company Location */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{company.city}</span>
-            <span className="text-xs text-gray-400">Company City</span>
+            <span className="text-sm font-semibold text-gray-900">{company.location || company.addresses?.[0]?.address || 'N/A'}</span>
+            <span className="text-xs text-gray-400">Location</span>
           </div>
 
           {/* Address */}
@@ -488,11 +518,6 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
             <span className="text-xs text-gray-400">Address</span>
           </div>
           
-          {/* Employee Number */}
-          <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{company.employeeNumber}</span>
-            <span className="text-xs text-gray-400">Employee Number</span>
-          </div>
 
           {/* Company Status */}
           <div className="flex flex-col justify-center items-center">
@@ -510,9 +535,13 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
                     ? "bg-[#FFEB9C]/40 border border-[#E6D48C] text-[#B59A00]"
                     : ""
                 }
+                ${!company.status || (company.status !== "Verified" && company.status !== "Pending")
+                    ? "bg-gray-100 border border-gray-300 text-gray-600"
+                    : ""
+                }
               `}
             >
-              {company.status}
+              {company.status || 'N/A'}
             </div>
             <span className="text-xs text-gray-400">Company Status</span>
           </div>
@@ -525,83 +554,110 @@ const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProp
 };
 
 export default function TopCompanyPage() {
- 
-        //---------------------filter----------------------------------
-         const [showCompanies, setShowCompanies] = useState(true);
-         const router = useRouter();
-         const [searchQuery, setSearchQuery] = useState("");
-         const [currentPage, setCurrentPage] = useState(1);
+  const { topCompanies, loading, error, getTopCompanies } = useTopCompanyHandler();
+  const [showCompanies, setShowCompanies] = useState(true);
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-     
-         // 🔍 Filter Companies
-         const filteredCompanies = useMemo(() => {
-           return mockCompanies.filter(applicant => {
-             // Search filter
-             const searchMatch =
-               !searchQuery.trim() ||
-               applicant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               applicant.id.toLowerCase().includes(searchQuery.toLowerCase());
- 
-             return searchMatch;
-           });
-         }, [searchQuery]);
-     
-     
-         
-         // 📄 Pagination
-        const [itemsPerPage, setItemsPerPage] = useState(10); // default 10 for desktop
+  useEffect(() => {
+    getTopCompanies(1, 100, searchQuery).catch((err) => {
+      console.error('Failed to load top companies:', err);
+    });
+  }, [getTopCompanies, searchQuery]);
 
-        useEffect(() => {
-          const updateItemsPerPage = () => {
-            if (window.innerWidth < 640) { // mobile
-              setItemsPerPage(4);
-            } else {
-              setItemsPerPage(10); // desktop
-            }
-          };
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      if (window.innerWidth < 640) {
+        setItemsPerPage(4);
+      } else {
+        setItemsPerPage(10);
+      }
+    };
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
+  }, []);
 
-          updateItemsPerPage(); // run once on mount
-          window.addEventListener("resize", updateItemsPerPage); // run on resize
+  const filteredCompanies = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return topCompanies;
+    }
+    const searchLower = searchQuery.toLowerCase();
+    return topCompanies.filter(company =>
+      company.name?.toLowerCase().includes(searchLower) ||
+      company.id?.toLowerCase().includes(searchLower) ||
+      company.phoneNumber?.toLowerCase().includes(searchLower) ||
+      company.address?.toLowerCase().includes(searchLower) ||
+      company.location?.toLowerCase().includes(searchLower) ||
+      (company.addresses && company.addresses.some(addr => addr.address?.toLowerCase().includes(searchLower)))
+    );
+  }, [topCompanies, searchQuery]);
 
-          return () => window.removeEventListener("resize", updateItemsPerPage);
-        }, []);
+  const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
+  const paginatedCompanies = filteredCompanies.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-         const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
-         
-         const paginatedCompanies = filteredCompanies.slice(
-           (currentPage - 1) * itemsPerPage,
-           currentPage * itemsPerPage
-         );
-         
-         const goToPage = (page: number) => {
-           if (page >= 1 && page <= totalPages) setCurrentPage(page);
-         };
-         
-         const goToPrevious = () => {
-           if (currentPage > 1) setCurrentPage(prev => prev - 1);
-         };
-         
-         const goToNext = () => {
-           if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
-         };
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
 
-        const totalCompanies = mockCompanies.length;
+  const goToPrevious = () => {
+    if (currentPage > 1) setCurrentPage(prev => prev - 1);
+  };
 
-        const verifiedCompanies = mockCompanies.filter(
-          (company) => company.status === "Verified"
-        ).length;
+  const goToNext = () => {
+    if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+  };
 
-        const pendingCompanies = mockCompanies.filter(
-          (company) => company.status === "Pending"
-        ).length;
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
-        const totalEmployees = mockCompanies.reduce(
-          (sum, company) => sum + company.employeeNumber,
-          0
-        );
+  const totalCompanies = topCompanies.length;
+  const verifiedCompanies = topCompanies.filter(
+    (company) => company.status === "Verified"
+  ).length;
+  const pendingCompanies = topCompanies.filter(
+    (company) => company.status === "Pending"
+  ).length;
+  const totalEmployees = topCompanies.reduce(
+    (sum, company) => sum + (company.employeeNumber || 0),
+    0
+  );
+
+  if (loading && topCompanies.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <h1 className="text-[28px] font-bold text-[#1E1E1E] mb-8">
+            Company
+          </h1>
+          <div className="flex justify-center py-10">
+            <p className="text-gray-500">Loading companies...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error && topCompanies.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <h1 className="text-[28px] font-bold text-[#1E1E1E] mb-8">
+            Company
+          </h1>
+          <div className="flex justify-center py-10 text-red-500">
+            Error: {error}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
    return (
        <DashboardLayout>
@@ -635,7 +691,7 @@ export default function TopCompanyPage() {
             <Card
               title="Total Employees"
               value={totalEmployees.toLocaleString()}
-              subtitle="Across all companies"
+              subtitle="All available contracts"
             />
           </div>
 
@@ -745,18 +801,24 @@ export default function TopCompanyPage() {
            ====================== */}
            {!showCompanies && (
              <div className="flex flex-col gap-2 mt-4">
-               {paginatedCompanies.map((company, index) => (
-                 <CompanyRow
-                   key={index}
-                   company={company}
-                   onMainClick={() =>
-                     router.push(
-                       `/Company/top-company/${company.id}`
-                     )
-                   }
-                   showCheckbox={true}
-                 />
-               ))}
+               {paginatedCompanies.length === 0 ? (
+                 <div className="text-center py-10 text-gray-500">
+                   No companies found
+                 </div>
+               ) : (
+                 paginatedCompanies.map((company) => (
+                   <CompanyRow
+                     key={company.id}
+                     company={company}
+                     onMainClick={() =>
+                       router.push(
+                         `/Company/top-company/${company.id}`
+                       )
+                     }
+                     showCheckbox={true}
+                   />
+                 ))
+               )}
              </div>
            )}
          </div>
