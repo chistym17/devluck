@@ -517,6 +517,37 @@ export default function DashboardPage() {
 const dashboardLoading =
   opportunitiesLoading || applicationsLoading || !stats;
 
+  const dashboardStats = useMemo(() => {
+  const formatValue = (val: number) => (dashboardLoading ? "..." : val.toString());
+
+  return [
+    {
+      title: "Opportunities",
+      value: formatValue(stats.totalOpportunities),
+      subtitle: "Recently created",
+    },
+    {
+      title: "Applications",
+      value: formatValue(stats.totalApplicants),
+      subtitle: "Total applications",
+    },
+    {
+      title: "Pending",
+      value: formatValue(stats.pendingApplications),
+      subtitle: "Waiting for review",
+    },
+    {
+      title: "Accepted",
+      value: formatValue(stats.acceptedApplications),
+      subtitle: "Approved candidates",
+    },
+  ];
+}, [
+  stats,
+  dashboardLoading
+]);
+
+
 
 
 
@@ -529,35 +560,15 @@ const dashboardLoading =
         </h1>
       {/* Top row: 4 cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8 place-items-center">
-        <Card
-          title="Opportunities"
-          value={String(stats.totalOpportunities)}
-          subtitle="Recently created"
-
-        />
-
-        <Card
-          title="Applications"
-          value={String(stats.totalApplicants)}
-          subtitle="Total applications"
-      
-        />
-
-        <Card
-          title="Pending"
-          value={String(stats.pendingApplications)}
-          subtitle="Waiting for review"
-      
-        />
-
-        <Card
-          title="Accepted"
-          value={String(stats.acceptedApplications)}
-          subtitle="Approved candidates"
-
-        />
-      </div>
-
+          {dashboardStats.map((stat) => (
+            <Card
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              subtitle={stat.subtitle}
+            />
+          ))}
+        </div>
 
 {dashboardLoading ? (
     <div className="flex h-[70vh] items-center justify-center">

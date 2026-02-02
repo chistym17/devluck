@@ -1,56 +1,61 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/src/components/Company/DashboardLayout";
-import { useTopApplicantHandler } from "@/src/hooks/companyapihandler/useTopApplicantHandler";
+import { useCompanyApplicationHandler } from "@/src/hooks/companyapihandler/useCompanyApplicationHandler";
 
 export default function ApplicantPage() {
   const params = useParams();
-  const router = useRouter();
   const { applicantId } = params;
-  const { topApplicant, loading, error, getTopApplicantById } = useTopApplicantHandler();
+  const {
+    student,
+    loading,
+    error,
+    getStudentProfileById,
+  } = useCompanyApplicationHandler();
 
   useEffect(() => {
-    if (applicantId && typeof applicantId === 'string') {
-      getTopApplicantById(applicantId).catch((err) => {
-        console.error('Failed to load applicant:', err);
-      });
+    const fetchData = async () => {
+      try {
+        await getStudentProfileById(applicantId as string);
+      } catch (error) {
+        console.error("Error fetching student profile:", error);
+      }
+    };
+    if (applicantId) {
+      fetchData();
     }
-  }, [applicantId, getTopApplicantById]);
-
-  const applicant = topApplicant;
+  }, [getStudentProfileById, applicantId]);
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="text-center">
-            <p className="text-gray-500">Loading applicant details...</p>
-          </div>
-        </div>
-      </DashboardLayout>
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
+      </div>
+    </DashboardLayout>
     );
   }
 
-  if (error || !applicant) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="bg-white shadow-md rounded-lg p-8 sm:p-12 text-center max-w-md w-full">
-            <h2 className="text-2xl sm:text-3xl font-bold text-red-600 mb-4 flex items-center justify-center gap-2">
-              ❌ Applicant Not Found
-            </h2>
-            <p className="text-[#555] text-base sm:text-lg">
-              {error || `No applicant with ID: ${applicantId} was found.`}
-            </p>
-            <p className="text-[#777] mt-2 text-sm">
-              Please check the ID or go back to the <a href="/Company/top-applicant" className="text-blue-500 hover:underline">top-applicant</a>.
-            </p>
-          </div>
+  if (error || !student) {
+  return (
+    <DashboardLayout>
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <div className="bg-white shadow-md rounded-lg p-8 sm:p-12 text-center max-w-md w-full">
+          <h2 className="text-2xl sm:text-3xl font-bold text-red-600 mb-4 flex items-center justify-center gap-2">
+            ❌ Applicant Not Found
+          </h2>
+          <p className="text-[#555] text-base sm:text-lg">
+            No applicant with ID: <span className="font-semibold text-[#1E1E1E]">{applicantId}</span> was found.
+          </p>
+          <p className="text-[#777] mt-2 text-sm">
+            Please check the ID or go back to the <a href="/Company/top-applicant" className="text-blue-500 hover:underline">top-applicant</a>.
+          </p>
         </div>
-      </DashboardLayout>
-    );
-  }
+      </div>
+    </DashboardLayout>
+  );
+}
 
 
 
@@ -87,27 +92,27 @@ export default function ApplicantPage() {
               {/* Name + Button Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-3">
                 <h1 className="font-barlow font-extrabold text-[40px] leading-[64px] text-[#1E1E1E]">
-                  {applicant ? applicant.name : applicantId}
+                  {student ? student.name : applicantId}
                 </h1>
 
                 <div
                   className="relative w-[120px] h-[35px] skew-x-[-12deg] bg-[#FFEB9C] flex items-center justify-center overflow-hidden rounded-md hover:bg-[#FFE066] transition duration-200 hover:scale-105"
                 >
                   <span className="skew-x-[12deg] font-bold text-[14px] text-[#1E1E1E]">
-                    {applicant.status ? applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1) : 'Active'}
+                    {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
                   </span>
                 </div>
 
               </div>
 
               {/* Description */}
-              <p className="font-publicSans text-[16px] leading-[24px] text-[#1E1E1E] break-words">
-                {applicant.description
-                  ? applicant.description.length > 250
-                    ? applicant.description.slice(0, 250) + "..."
-                    : applicant.description
-                  : "Applicant description not found."}
-              </p>
+            <p className="font-publicSans text-[16px] leading-[24px] text-[#1E1E1E]">
+              {student?.description
+                ? student.description.length > 250
+                  ? student.description.slice(0, 250) + "..."
+                  : student.description
+                : "Applicant description not found."}
+            </p>
             </div>
 
 
@@ -119,15 +124,20 @@ export default function ApplicantPage() {
 
               <div className="relative w-[260px] sm:w-[260px] h-[175px]">
                 {/* Background number or placeholder */}
-                <div className="font-barlow font-extrabold text-[200px] leading-[175px] text-[#C2C2C2] flex  w-[200px] sm:w-[260px] h-[175px]">
-                  {applicant.profileRanking || "N/A"}
+                <div
+                  className={`font-barlow font-extrabold leading-[175px] text-[#C2C2C2] flex w-[200px] sm:w-[260px] h-[175px]
+                    ${student?.profileRanking ? "text-[200px]" : "text-[100px] leading-[175px] text-center justify-center items-center"}
+                  `}
+                >
+                  {student?.profileRanking ?? "N/A"}
                 </div>
 
                 {/* Profile Ranking label */}
-                <h4 className="absolute left-[70px] top-[85px] font-publicSans font-bold text-[24px] leading-[36px] text-[#1E1E1E] flex ">
-                  Profile Ranking 
+                <h4 className="absolute left-[70px] top-[85px] font-publicSans font-bold text-[24px] leading-[36px] text-[#1E1E1E]">
+                  Profile Ranking
                 </h4>
               </div>
+
               <div className=" justify-between items-center w-[300px] h-[81px] p-[16px] flex flex-col ">
                 {/* Profile Progress Label */}
                 <div className="flex flex-row justify-between items-center w-[200px] sm:w-[260px] h-[19px]">
@@ -136,7 +146,7 @@ export default function ApplicantPage() {
                   </span>
                   
                   <span className="font-bold text-[12px] leading-[18px] uppercase text-[#1E1E1E]">
-                    {applicant.profileComplete || 0}%
+                    {student?.profileComplete || 0}%
                   </span>
                 </div>
 
@@ -145,68 +155,30 @@ export default function ApplicantPage() {
                   {/* Progress Fill */}
                   <div
                     className="absolute left-0.5 top-1/2 h-[14px] -translate-y-1/2 rounded bg-[#FFEB9C]"
-                    style={{ width: `${applicant.profileComplete || 0}%` }}
+                    style={{ width: `${student?.profileComplete || 0}%` }}
                   />
 
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-4 w-[62px] h-[152px] mx-auto">
-              {/* First pair */}
-              <div className="flex flex-row items-center gap-1.5 w-[115px] h-[40px]">
-                <img 
-                  src="/cards/tag.svg" 
-                  alt="Tag Icon"
-                />
-                  {/* Frame 97 - Label container */}
+              {[
+                { value: (student as any)?.email ?? "—", label: "Email", key: "email" },
+                { value: student?.availability ?? "—", label: "Availability", key: "availability" },
+                { value: (student as any)?.salaryExpectation ? (student as any).salaryExpectation.toLocaleString() : "—", label: "Salary Expectation", key: "salaryExpectation" },
+              ].map((item) => (
+                <div key={item.key} className="flex flex-row items-center gap-1.5 w-[115px] h-[40px]">
+                  <img src="/cards/tag.svg" alt="Tag Icon" />
                 <div className="flex flex-col justify-center items-start w-[77px] h-[40px] flex-none gap-1">
-                  {/* body2 text */}
                   <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
-                    {applicant?.salaryExpectation ? `$${applicant.salaryExpectation}` : 'N/A'}
+                      {item.value}
                   </span>
-                  {/* caption text */}
-                  <span className="w-[49px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
-                    Salary
+                    <span className="w-[100px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
+                      {item.label}
                   </span>
                 </div>
-              </div>
-
-              {/* Second pair */}
-              <div className="flex flex-row items-center gap-1.5 w-[115px] h-[40px]">
-                <img 
-                  src="/cards/tag.svg" 
-                  alt="Tag Icon"
-                />
-                  {/* Frame 97 - Label container */}
-                <div className="flex flex-col justify-center items-start w-[77px] h-[40px] flex-none gap-1">
-                  {/* body2 text */}
-                  <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
-                    {applicant?.availability || 'N/A'}
-                  </span>
-                  {/* caption text */}
-                  <span className="w-[49px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
-                    Availability
-                  </span>
                 </div>
-              </div>
-              {/* Third pair */}
-              <div className="flex flex-row items-center gap-1.5 w-[115px] h-[40px]">
-                <img 
-                  src="/cards/tag.svg" 
-                  alt="Tag Icon"
-                />
-                  {/* Frame 97 - Label container */}
-                <div className="flex flex-col justify-center items-start w-[77px] h-[40px] flex-none gap-1">
-                  {/* body2 text */}
-                  <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
-                    {applicant?.addresses && applicant.addresses.length > 0 ? applicant.addresses[0].city || 'N/A' : 'N/A'}
-                  </span>
-                  {/* caption text */}
-                  <span className="w-[49px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
-                    City
-                  </span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -226,14 +198,14 @@ export default function ApplicantPage() {
           >
             {/* Inner content (counter-skew) */}
             <div className="transform skew-x-12 px-8 w-full h-full overflow-y-auto">
-            {applicant?.skills && applicant.skills.length > 0 ? (
+            {student?.skills && student.skills.length > 0 ? (
               <div className="flex flex-wrap gap-3">
-                {applicant.skills.map((skillItem, index) => (
+                 {student.skills.map((skillItem: any) => (
                   <span
-                    key={skillItem.skill?.id || `skill-${index}`}
+                    key={skillItem.skill?.id || skillItem.skillId}
                     className="px-4 py-2 text-[14px] font-publicSans text-[#1E1E1E] transform -skew-x-12 rounded-[8px] border border-black/80 whitespace-nowrap transform-none"
                   >
-                    {skillItem.skill?.name || 'Unknown'}
+                    {skillItem.skill?.name || skillItem.name || 'Unknown'}
                   </span>
                 ))}
               </div>
@@ -258,14 +230,14 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full h-full overflow-y-auto">
-                {applicant?.skills && applicant.skills.length > 0 ? (
+                {student?.skills && student.skills.length > 0 ? (
                   <div className="flex flex-wrap gap-3">
-                    {applicant.skills.map((skillItem, index) => (
+                    {student.skills.map((skillItem: any) => (
                       <span
-                        key={skillItem.skill?.id || `skill-${index}`}
+                        key={skillItem.skill?.id || skillItem.skillId}
                         className="px-4 py-2 text-[14px] font-publicSans text-[#1E1E1E] transform -skew-x-12 rounded-[8px] border border-black/80 whitespace-nowrap transform-none"
                       >
-                        {skillItem.skill?.name || 'Unknown'}
+                         {skillItem.skill?.name || skillItem.name || 'Unknown'}
                       </span>
                     ))}
                   </div>
@@ -289,21 +261,23 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-              {applicant?.experiences && applicant.experiences.length > 0 ? (
-                applicant.experiences.map((exp) => (
+              {student?.experiences && student.experiences.length > 0 ? (
+                student.experiences.map((exp: any) => (
                     <div key={exp.id} className="px-4 py-2 w-full">
                       <div className="flex items-center justify-between">
+                        {/* Left side: SVG + Role */}
                         <div className="flex items-center gap-2">
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                           </svg>
                           <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
-                            {exp.role || 'N/A'}
+                            {exp.role}
                           </h4>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-[12px] text-[#555] transform-none">
-                        <span className="font-publicSans">{exp.companyName || 'N/A'}</span>
+                        <span className="font-publicSans">{exp.companyName}</span>
+                        {/* small rotated square */}
                         <svg
                           width="8"
                           height="8"
@@ -314,14 +288,12 @@ export default function ApplicantPage() {
                         >
                           <rect x="3.53564" width="5" height="5" fill="black" />
                         </svg>
-                        <span className="font-publicSans transform-none">{exp.date || 'N/A'}</span>
+                        <span className="font-publicSans transform-none">{exp.date}</span>
                       </div>
-                      {exp.description && (
-                        <p className="font-publicSans text-[12px] text-[#1E1E1E] mt-1 break-words transform-none">
-                          {exp.description.split(" ").slice(0, 10).join(" ")}
-                          {exp.description.split(" ").length > 10 ? "..." : ""}
-                        </p>
-                      )}
+                      <p className="font-publicSans text-[12px] text-[#1E1E1E] mt-1 break-words transform-none">
+                        {exp.description.split(" ").slice(0, 10).join(" ")}
+                        {exp.description.split(" ").length > 10 ? "..." : ""}
+                      </p>
                     </div>
                   ))
               ) : (
@@ -341,8 +313,8 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-              {applicant?.educations && applicant.educations.length > 0 ? (
-                applicant.educations.map((edu) => (
+              {student?.educations && student.educations.length > 0 ? (
+                student.educations.map((edu: any) => (
                     <div key={edu.id} className="px-4 py-2 w-full">
                       <div className="flex items-center justify-between">
                         {/* Left side: SVG + Major */}
@@ -351,12 +323,14 @@ export default function ApplicantPage() {
                             <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                           </svg>
                           <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
-                            {edu.major || 'N/A'}
+                            {edu.major}
                           </h4>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-[12px] text-[#555] transform-none">
-                        <span className="font-publicSans">{edu.name || 'N/A'}</span>
+                        <span className="font-publicSans">{edu.name}</span>
+                        
+                        {/* small rotated square */}
                         <svg
                           width="8"
                           height="8"
@@ -367,14 +341,13 @@ export default function ApplicantPage() {
                         >
                           <rect x="3.53564" width="5" height="5" fill="black" />
                         </svg>
-                        <span className="font-publicSans">{edu.date || 'N/A'}</span>
+
+                        <span className="font-publicSans">{edu.date}</span>
                       </div>
-                      {edu.description && (
-                        <p className="font-publicSans text-[12px] text-[#1E1E1E] mt-1">
-                          {edu.description.split(" ").slice(0, 10).join(" ")}
-                          {edu.description.split(" ").length > 10 ? "..." : ""}
-                        </p>
-                      )}
+                      <p className="font-publicSans text-[12px] text-[#1E1E1E] mt-1">
+                        {edu.description.split(" ").slice(0, 10).join(" ")}
+                        {edu.description.split(" ").length > 10 ? "..." : ""}
+                      </p>
                     </div>
                   ))
               ) : (
@@ -397,8 +370,8 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-              {applicant?.languages && applicant.languages.length > 0 ? (
-                applicant.languages.map((lang) => (
+               {student?.languages && student.languages.length > 0 ? (
+                student.languages.map((lang: any) => (
                     <div key={lang.id} className="px-4 py-2 w-full">
                       <div className="flex items-center justify-between">
                         {/* Left side: SVG + Language name */}
@@ -407,15 +380,15 @@ export default function ApplicantPage() {
                             <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                           </svg>
                           <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
-                            {lang.name || 'N/A'}
+                            {lang.name}
                           </h4>
                         </div>
                       </div>
-                      {lang.level && (
-                        <p className="font-publicSans text-[12px] text-[#555] mt-1 transform-none">
-                          {lang.level}
-                        </p>
-                      )}
+
+                      {/* Level text (optional) */}
+                      <p className="font-publicSans text-[12px] text-[#555] mt-1 transform-none">
+                        {lang.level}
+                      </p>
                     </div>
                   ))
               ) : (
@@ -435,8 +408,8 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-                {applicant?.portfolios && applicant.portfolios.length > 0 ? (
-                  applicant.portfolios.map((port) => (
+                {student?.portfolios && student.portfolios.length > 0 ? (
+                  student.portfolios.map((port: any) => (
                       <div key={port.id} className="px-4 py-2 w-full">
                         <div className="flex items-center justify-between">
                           {/* Left side: SVG + Portfolio Name */}
@@ -445,7 +418,7 @@ export default function ApplicantPage() {
                               <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                             </svg>
                             <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E]">
-                              {port.name || 'N/A'}
+                              {port.name}
                             </h4>
                           </div>
                         </div>

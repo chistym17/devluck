@@ -929,7 +929,7 @@ export default function contractDetailPage() {
     return (
         <DashboardLayout>
             <div className="flex items-center justify-center h-screen">
-                <div className="p-6 text-center bg-white rounded-lg shadow-md">
+                <div className="p-6 text-center ">
                     <h2 className="text-xl font-bold">Opportunity Not Found</h2>
                     <button
                         className="mt-4 px-4 py-2 bg-yellow-300 rounded hover:bg-yellow-400"

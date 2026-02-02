@@ -3,17 +3,31 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/src/components/Company/DashboardLayout";
 import { mockApplicants } from "@/src/mocks/mockApplicants";
-import { educationData } from "@/src/mocks/mockEducation";
-import { experienceData } from "@/src/mocks/mockExperience";
-import { languageData } from "@/src/mocks/mockLanguages";
-import { portfolioData } from "@/src/mocks/mockPortfolio";
 import { mockApplicantPayments } from "@/src/mocks/mockApplicantPayments";
 import { ArrowUpRight } from "lucide-react";
 import PaymentModal from "@/src/components/Company/PaymentModal";
-import { notFound } from "next/navigation";
 import { useContractHandler } from "@/src/hooks/companyapihandler/useContractHandler";
 import { usePaymentHandler } from "@/src/hooks/companyapihandler/usePaymentHandler";
 import { api } from "@/src/lib/api";
+import { createPortal } from "react-dom";
+import { Toast } from "@/src/components/common/Toast";
+  
+interface Payment {
+  id: string;
+  applicantName: string;
+  contractId?: string;
+  nextPayment: string;
+  monthlyAllowance?: string;
+  note?: string;
+  paymentStatus: string;
+  applicantId?: string | null;
+  transferId?: string | null;
+  workLocation?: string | null;
+  method?: string | null;
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 /* ──────────────────────────────────────────────
    Card Component
@@ -33,22 +47,22 @@ const Card = ({
       {/* ========================
           SVG Card Background
       ======================== */}
-      <svg
+        <svg
         width="437"
         height="185"
         viewBox="0 0 437 185"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-      >
+        >
         <g filter="url(#filter0_dd_12839_50658)">
-          <path
+            <path
             d="M333.25 8C341.794 8 347.555 18.8815 347.555 27.4258C347.555 45.0952 361.879 59.4197 379.548 59.4199H403.41C409.813 59.4199 416.68 63.8245 416.68 70.2269V123.865C416.68 139.881 403.696 152.865 387.68 152.865H49C32.9837 152.865 20 139.881 20 123.865V37C20 20.9837 32.9837 8 49 8H333.25Z"
             fill="white"
-          />
+            />
         </g>
 
         <defs>
-          <filter
+            <filter
             id="filter0_dd_12839_50658"
             x="0"
             y="0"
@@ -56,59 +70,59 @@ const Card = ({
             height="184.865"
             filterUnits="userSpaceOnUse"
             colorInterpolationFilters="sRGB"
-          >
+            >
             <feFlood floodOpacity="0" result="BackgroundImageFix" />
             <feColorMatrix
-              in="SourceAlpha"
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-              result="hardAlpha"
+                in="SourceAlpha"
+                type="matrix"
+                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                result="hardAlpha"
             />
             <feMorphology
-              radius="4"
-              operator="erode"
-              in="SourceAlpha"
-              result="effect1_dropShadow_12839_50658"
+                radius="4"
+                operator="erode"
+                in="SourceAlpha"
+                result="effect1_dropShadow_12839_50658"
             />
             <feOffset dy="12" />
             <feGaussianBlur stdDeviation="12" />
             <feComposite in2="hardAlpha" operator="out" />
             <feColorMatrix
-              type="matrix"
-              values="0 0 0 0 0.568627 0 0 0 0 0.619608 0 0 0 0 0.670588 0 0 0 0.12 0"
+                type="matrix"
+                values="0 0 0 0 0.568627 0 0 0 0 0.619608 0 0 0 0 0.670588 0 0 0 0.12 0"
             />
             <feBlend
-              mode="normal"
-              in2="BackgroundImageFix"
-              result="effect1_dropShadow_12839_50658"
+                mode="normal"
+                in2="BackgroundImageFix"
+                result="effect1_dropShadow_12839_50658"
             />
             <feColorMatrix
-              in="SourceAlpha"
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-              result="hardAlpha"
+                in="SourceAlpha"
+                type="matrix"
+                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                result="hardAlpha"
             />
             <feOffset />
             <feGaussianBlur stdDeviation="1" />
             <feComposite in2="hardAlpha" operator="out" />
             <feColorMatrix
-              type="matrix"
-              values="0 0 0 0 0.568627 0 0 0 0 0.619608 0 0 0 0 0.670588 0 0 0 0.2 0"
+                type="matrix"
+                values="0 0 0 0 0.568627 0 0 0 0 0.619608 0 0 0 0 0.670588 0 0 0 0.2 0"
             />
             <feBlend
-              mode="normal"
-              in2="effect1_dropShadow_12839_50658"
-              result="effect2_dropShadow_12839_50658"
+                mode="normal"
+                in2="effect1_dropShadow_12839_50658"
+                result="effect2_dropShadow_12839_50658"
             />
             <feBlend
-              mode="normal"
-              in="SourceGraphic"
-              in2="effect2_dropShadow_12839_50658"
-              result="shape"
+                mode="normal"
+                in="SourceGraphic"
+                in2="effect2_dropShadow_12839_50658"
+                result="shape"
             />
-          </filter>
+            </filter>
         </defs>
-      </svg>
+        </svg>
 
 
       {/* ========================
@@ -173,18 +187,33 @@ const Card = ({
 };
 
 type ContractRowProps = {
-  payment: typeof mockApplicantPayments[0];
+  payment: Payment;
   onSideClick?: () => void;
+  onDelete?: () => void;
   showCheckbox?: boolean;
 };
 
-const ContractRow = ({ payment, onSideClick, showCheckbox = false }: ContractRowProps) => {
+const ContractRow = ({ payment, onSideClick, onDelete, showCheckbox = false }: ContractRowProps) => {
   const [checked, setChecked] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   return (
     <div className="flex w-full gap-4">
       {/* Main 80% section */}
       <div
-        className="flex items-center w-9/10 skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg bg-white cursor-pointer hover:bg-gray-50"
+        className="flex items-center skew-x-[-12deg] rounded-lg h-[72px] shadow-lg bg-white cursor-pointer hover:bg-gray-50"
         onClick={() => {
           onSideClick?.();
         }}
@@ -193,7 +222,7 @@ const ContractRow = ({ payment, onSideClick, showCheckbox = false }: ContractRow
         {/* Left spacer */}
         <div className="w-6 h-full flex-none"></div>
 
-        {/* Checkbox */}
+       {/* Checkbox */}
         {showCheckbox && (
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
@@ -232,51 +261,45 @@ const ContractRow = ({ payment, onSideClick, showCheckbox = false }: ContractRow
         {/* Applicant Info */}
         <div className="flex-1 flex items-center skew-x-[12deg] h-full px-4 gap-6">
 
-          {/* Next Payment */}
-          <div className="flex flex-col justify-center w-[140px]">
+          {/* Payment Date */}
+          <div className="flex flex-col justify-center w-[150px]">
             <span className="text-sm font-semibold text-gray-900">{payment.nextPayment}</span>
-            <span className="text-xs text-gray-400">Next Payment</span>
+            <span className="text-xs text-gray-400">Payment Date</span>
           </div>
 
           {/* Monthly Allowance */}
-          <div className="flex flex-col justify-center w-[140px]">
+          <div className="flex flex-col justify-center w-[150px]">
             <span className="text-sm font-semibold text-gray-900">{payment.monthlyAllowance}</span>
             <span className="text-xs text-gray-400">Monthly Allowance</span>
           </div>
 
           {/* Transfer ID */}
-          <div className="flex flex-col justify-center w-[140px]">
+          <div className="flex flex-col justify-center w-[300px]">
             <span className="text-sm font-semibold text-gray-900">{payment.transferId}</span>
             <span className="text-xs text-gray-400">Transfer ID</span>
           </div>
 
-          {/* Method ID */}
-          <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{payment.method}</span>
-            <span className="text-xs text-gray-400">Method</span>
-          </div>
-
-          {/* Note ID */}
-          <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{payment.note}</span>
-            <span className="text-xs text-gray-400">Method</span>
+            {/* Note */}
+          <div className="flex flex-col justify-center w-[150px]">
+            <span className="text-sm font-semibold text-gray-900">{payment.note || "-"}</span>
+            <span className="text-xs text-gray-400">Note</span>
           </div>
 
 
-          {/* Payment Status */}
-          <div className="flex flex-col justify-center items-center w-[140px]">
+            {/* Payment Status */}
+            <div className="flex flex-col justify-center items-center w-[150px]">
             <div
-              className={`
+                className={`
                 ml-4 px-3 py-1 skew-x-[-12deg] rounded-[8px] text-xs font-semibold flex items-center justify-center
                 ${payment.paymentStatus === "Paid" ? "bg-[#D3FCD2] border border-[#22C55E] text-[#22C55E]" : ""}
                 ${payment.paymentStatus === "Due" ? "bg-[#FFDCDC] border border-[#FF4D4F] text-[#FF4D4F]" : ""}
                 ${payment.paymentStatus === "Pending" ? "bg-[#FFF4CC] border border-[#F59E0B] text-[#F59E0B]" : ""}
                 `}
             >
-              {payment.paymentStatus}
+                {payment.paymentStatus}
             </div>
             <span className="text-xs text-gray-400">Payment Status</span>
-          </div>
+            </div>
 
         </div>
       </div>
@@ -284,9 +307,23 @@ const ContractRow = ({ payment, onSideClick, showCheckbox = false }: ContractRow
       {/* Second 20% section beside the main card */}
       <div
         className="relative  flex items-center w-1/10 skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg bg-[#FFF9E0] cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+
+          const rect = e.currentTarget.getBoundingClientRect();
+
+         setMenuPos({
+            top: rect.top + window.scrollY,
+            left: rect.right + window.scrollX - 230,
+          });
+
+
+
+          setMenuOpen((prev) => !prev);
+        }}
       >
-        <div className="flex items-center justify-center skew-x-[12deg] w-full h-full">
-          {/* Example Frame 295 content */}
+        <div className="flex items-center justify-center skew-x-[12deg] w-full h-full"
+        onClick={onDelete}>
           <div className="flex flex-col items-center justify-center gap-1">
             <svg
               width="77"
@@ -326,18 +363,31 @@ const ContractRow = ({ payment, onSideClick, showCheckbox = false }: ContractRow
                 strokeWidth="1.06667"
               />
             </svg>
+
+            
           </div>
         </div>
       </div>
     </div>
   );
 };
-
 const ITEMS_PER_PAGE = 6;
 export default function ApplicantPage() {
-  const router = useRouter();
+
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [toastVisible, setToastVisible] = useState(false);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
   const params = useParams<{ applicantId: string }>();
   const contractId = params.applicantId; // This is actually the contract ID
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // ------------------ States -------------------
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -357,15 +407,9 @@ export default function ApplicantPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [showAll, setShowAll] = useState(false);
-  const [showAllExp, setShowAllExp] = useState(false);
-  const [showAllLang, setShowAllLang] = useState(false);
-  const [showAllPortfolio, setShowAllPortfolio] = useState(false);
-  const [showAllSkills, setShowAllSkills] = useState(false);
-
   // ------------------ Hooks -------------------
   const { getContractById } = useContractHandler();
-  const { listPayments, getPaymentStats } = usePaymentHandler();
+  const { listPayments, getPaymentStats, deletePayment } = usePaymentHandler();
 
   // ------------------ Fetch Contract, Student Profile, and Payments -------------------
   useEffect(() => {
@@ -443,6 +487,9 @@ export default function ApplicantPage() {
   // Map API payments to match the expected format
   const mappedPayments = useMemo(() => {
     return payments.map((payment: any) => ({
+      companyId: payment.companyId || "",         // Added
+      createdAt: payment.createdAt || "",         // Added
+      updatedAt: payment.updatedAt || "",         // Added
       id: payment.id,
       applicantId: payment.studentId || payment.applicantId || "",
       applicantName: payment.applicantName || "",
@@ -527,10 +574,20 @@ export default function ApplicantPage() {
   if (contractError || !contract) {
     return (
       <DashboardLayout>
-        <div className="p-6 text-lg font-semibold text-red-600">
-          {contractError || "Contract not found"}
-        </div>
-      </DashboardLayout>
+            <div className="flex items-center justify-center min-h-[80vh]">
+              <div className="bg-white shadow-md rounded-lg p-8 sm:p-12 text-center max-w-md w-full">
+                <h2 className="text-2xl sm:text-3xl font-bold text-red-600 mb-4 flex items-center justify-center gap-2">
+                  ❌ Contract-list Not Found
+                </h2>
+                <p className="text-[#555] text-base sm:text-lg">
+                  No contract-list with ID: <span className="font-semibold text-[#1E1E1E]">{contractId}</span> was found.
+                </p>
+                <p className="text-[#777] mt-2 text-sm">
+                  Please check the ID or go back to the <a href="/Company/contract-list" className="text-blue-500 hover:underline">contract-list</a>.
+                </p>
+              </div>
+            </div>
+          </DashboardLayout>
     );
   }
 
@@ -539,23 +596,30 @@ export default function ApplicantPage() {
 
   return (
     <DashboardLayout>
-      <div
-        className="py-6 min-h-[800px]"
+       <div
+        className="
+          py-6 min-h-[800px]
+          bg-no-repeat
+          bg-[center_top]
+          bg-[length:340px_auto]
+          sm:bg-[65%_top]
+          sm:bg-auto
+        "
         style={{
           backgroundImage: "url('/pages/applicantInfoBackground.svg')",
-          backgroundPosition: "65% top",
-          backgroundRepeat: "no-repeat",
           transform: "scale(0.96)",
           transformOrigin: "top center",
         }}
       >
-        {/* ✅ CONTENT CONTAINER */}
+
+
+            {/* ✅ CONTENT CONTAINER */}
         <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
-          <div
+            <div
             className="
-          flex flex-row items-start
-          justify-start
-        "
+              flex flex-row items-start
+              justify-start mt-80 sm:mt-0
+            "
           >
             <div className="w-[450px] h-auto flex flex-col gap-4"> {/* <-- gap between sections */}
 
@@ -575,9 +639,9 @@ export default function ApplicantPage() {
                     </span>
                   </div>
 
-                </div>
+                  </div>
 
-                {/* Description */}
+                  {/* Description */}
                 <p className="font-publicSans text-[16px] leading-[24px] text-[#1E1E1E]">
                   {student?.description
                     ? student.description.length > 250
@@ -589,41 +653,45 @@ export default function ApplicantPage() {
                       : applicant.description
                     : "Applicant description not found."}
                 </p>
-
-              </div>
+                </div>
 
 
               {/* Frame 313 example */}
-              <div className="flex flex-row justify-between items-center gap-[10px] w-[557px] h-[175px]"> {/* <-- updated height */}
+              <div className="flex flex-row justify-between items-center gap-20 w-full sm:max-w-[655px] sm:min-w-[400px] h-full"> {/* <-- updated height */}
 
                 {/* Profile Ranking Card */}
-                <div className="relative flex flex-col items-center justify-center w-[250px] h-[260px]">
+                <div className="relative flex flex-col items-center justify-center w-[200px] sm:w-[260px] h-[260px]">
 
-                  <div className="relative w-[250px] h-[175px]">
+                  <div className="relative w-[260px] sm:w-[260px] h-[175px]">
                     {/* Background number or placeholder */}
-                    <div className="font-barlow font-extrabold text-[200px] leading-[175px] text-[#C2C2C2] flex  w-[225px] h-[175px]">
-                      {student?.profileRanking || applicant?.profileRanking || "N/A"}
+                    <div
+                      className={`font-barlow font-extrabold leading-[175px] text-[#C2C2C2] flex w-[200px] sm:w-[260px] h-[175px]
+                        ${student?.profileRanking ? "text-[200px]" : "text-[100px] leading-[175px] text-center justify-center items-center"}
+                      `}
+                    >
+                      {student?.profileRanking ?? "N/A"}
                     </div>
 
                     {/* Profile Ranking label */}
-                    <h4 className="absolute left-[70px] top-[85px] font-publicSans font-bold text-[24px] leading-[36px] text-[#1E1E1E] flex ">
+                    <h4 className="absolute left-[70px] top-[85px] font-publicSans font-bold text-[24px] leading-[36px] text-[#1E1E1E]">
                       Profile Ranking
                     </h4>
                   </div>
-                  <div className=" justify-between items-center w-[250px] h-[81px] p-[16px] flex flex-col gap-[8px] bg-white/60 backdrop-blur-[17px] rounded-[21px]">
+
+                  <div className=" justify-between items-center w-[300px] h-[81px] p-[16px] flex flex-col ">
                     {/* Profile Progress Label */}
-                    <div className="flex flex-row justify-between items-center w-[154px] h-[19px]">
+                    <div className="flex flex-row justify-between items-center w-[200px] sm:w-[260px] h-[19px]">
                       <span className="font-bold text-[12px] leading-[18px] uppercase text-[#1E1E1E]">
                         Profile Progress
                       </span>
-
+                      
                       <span className="font-bold text-[12px] leading-[18px] uppercase text-[#1E1E1E]">
                         {student?.profileComplete || applicant?.profileComplete || 0}%
                       </span>
                     </div>
 
                     {/* Progress Bar Container */}
-                    <div className="relative w-[154px] h-[16px] bg-[#1E1E1E] transform -skew-x-[20deg]  rounded-[4px]">
+                    <div className="relative w-[200px] sm:w-[260px] h-[16px] bg-[#1E1E1E] transform -skew-x-[20deg]  rounded-[4px]">
                       {/* Progress Fill */}
                       <div
                         className="absolute left-0.5 top-1/2 h-[14px] -translate-y-1/2 rounded bg-[#FFEB9C]"
@@ -641,84 +709,113 @@ export default function ApplicantPage() {
                   ].map((item) => (
                     <div key={item.key} className="flex flex-row items-center gap-1.5 w-[115px] h-[40px]">
                       <img src="/cards/tag.svg" alt="Tag Icon" />
-                      <div className="flex flex-col justify-center items-start w-[77px] h-[40px] flex-none gap-1">
-                        <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
+                    <div className="flex flex-col justify-center items-start w-[77px] h-[40px] flex-none gap-1">
+                      <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
                           {item.value}
-                        </span>
-                        <span className="w-[77px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
+                      </span>
+                        <span className="w-[100px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
                           {item.label}
-                        </span>
-                  </div>
-                  </div>
+                      </span>
+                    </div>
+                    </div>
                   ))}
                 </div>
               </div>
             </div>
 
             {/* Skills Parallelogram Card */}
-            <div className="absolute top-50 left-80 w-[460px] h-auto relative">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]">
-                  Skills
-                </h3>
-              </div>
+            <div className="hidden sm:block absolute top-50 left-80 w-[460px] h-auto relative">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]">
+                Skills
+              </h3>
+            </div>
 
-              {/* Parallelogram background */}
+            {/* Parallelogram background */}
               <div
                 className="w-full max-w-[655px] min-w-[460px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden"
                 style={{ maxHeight: "250px" }} // <-- crucial
               >
                 {/* Inner content (counter-skew) */}
                 <div className="transform skew-x-12 px-8 w-full h-full overflow-y-auto">
-                  {student?.skills && student.skills.length > 0 ? (
-                    <div className="flex flex-wrap gap-3">
-                      {student.skills.map((skillItem: any) => (
-                        <span
-                          key={skillItem.skill?.id || skillItem.skillId}
-                          className="px-4 py-2 text-[14px] font-publicSans text-[#1E1E1E] transform -skew-x-12 rounded-[8px] border border-black/80 whitespace-nowrap"
-                        >
-                          {skillItem.skill?.name || skillItem.name || 'Unknown'}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[#555] font-publicSans">No skills info available.</p>
-                  )}
-                </div>
+                {student?.skills && student.skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-3">
+                    {student.skills.map((skillItem: any) => (
+                      <span
+                        key={skillItem.skill?.id || skillItem.skillId}
+                        className="px-4 py-2 text-[14px] font-publicSans text-[#1E1E1E] transform -skew-x-12 rounded-[8px] border border-black/80 whitespace-nowrap transform-none"
+                      >
+                        {skillItem.skill?.name || skillItem.name || 'Unknown'}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[#555] font-publicSans">No skills info available.</p>
+                )}
+              </div>
               </div>
             </div>
           </div>
 
           {/* Skills Parallelogram Card */}
-          <div className="flex flex-col items-center justify-center mt-65 gap-10">
+          <div className="flex flex-col items-center justify-center mt-10 sm:mt-40 gap-10">
+
+            {/* Skills Card */}
+              <div className="w-full sm:max-w-[655px] sm:min-w-[580px] h-auto relative sm:hidden">
+
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]">
+                  Skills
+                  </h3>
+                </div>
+                <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
+                  <div className="transform skew-x-12 px-8 w-full h-full overflow-y-auto">
+                    {student?.skills && student.skills.length > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {student.skills.map((skillItem: any) => (
+                          <span
+                            key={skillItem.skill?.id || skillItem.skillId}
+                            className="px-4 py-2 text-[14px] font-publicSans text-[#1E1E1E] transform -skew-x-12 rounded-[8px] border border-black/80 whitespace-nowrap transform-none"
+                          >
+                            {skillItem.skill?.name || skillItem.name || 'Unknown'}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#555] font-publicSans">No skills info available.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
             {/* Row 1 */}
             <div className="flex flex-row items-start xl:items-stretch justify-center gap-10 flex-wrap xl:flex-nowrap w-full">
 
 
               {/* Experience Card */}
-              <div className="w-full max-w-[655px] min-w-[580px] h-auto relative">
+              <div className="w-full sm:max-w-[655px] sm:min-w-[580px] h-auto relative">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]">
-                    Experience
+                  Experience
                   </h3>
                 </div>
-                <div className={`w-full max-w-[655px] min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 ${showAllExp ? "max-h-[2000px]" : "max-h-[250px]"}`}>
+                <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
                   <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-                    {student?.experiences && student.experiences.length > 0 ? (
-                      student.experiences.map((exp: any) => (
+                  {student?.experiences && student.experiences.length > 0 ? (
+                    student.experiences.map((exp: any) => (
                         <div key={exp.id} className="px-4 py-2 w-full">
                           <div className="flex items-center justify-between">
                             {/* Left side: SVG + Role */}
                             <div className="flex items-center gap-2">
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C" />
+                                <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                               </svg>
-                              <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E]">
+                              <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
                                 {exp.role}
                               </h4>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 text-[12px] text-[#555]">
+                          <div className="flex items-center gap-2 text-[12px] text-[#555] transform-none">
                             <span className="font-publicSans">{exp.companyName}</span>
                             {/* small rotated square */}
                             <svg
@@ -731,7 +828,7 @@ export default function ApplicantPage() {
                             >
                               <rect x="3.53564" width="5" height="5" fill="black" />
                             </svg>
-                            <span className="font-publicSans">{exp.startDate} - {exp.endDate || "Present"}</span>
+                            <span className="font-publicSans transform-none">{exp.date}</span>
                           </div>
                           {exp.description && (
                             <p className="font-publicSans text-[12px] text-[#1E1E1E] mt-1 break-words">
@@ -750,16 +847,16 @@ export default function ApplicantPage() {
 
 
               {/* Card 2 */}
-              <div className="w-full max-w-[655px] min-w-[580px] h-auto relative">
+              <div className="w-full sm:max-w-[655px] sm:min-w-[580px] h-auto relative">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E] ">
-                    Education
-                  </h3>
+                  <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]  ">
+                      Education
+                    </h3>
                 </div>
-                <div className={`w-full max-w-[655px] min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 ${showAll ? "max-h-[2000px]" : "max-h-[250px]"}`}>
+                <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
                   <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-                    {student?.educations && student.educations.length > 0 ? (
-                      student.educations.map((edu: any) => (
+                  {student?.educations && student.educations.length > 0 ? (
+                    student.educations.map((edu: any) => (
                         <div key={edu.id} className="px-4 py-2 w-full">
                           <div className="flex items-center justify-between">
                             {/* Left side: SVG + Major */}
@@ -809,16 +906,16 @@ export default function ApplicantPage() {
             <div className="flex flex-row items-start xl:items-stretch justify-center gap-10 flex-wrap xl:flex-nowrap w-full">
 
               {/* Language Card */}
-              <div className="w-full max-w-[655px] min-w-[580px] h-auto relative">
+              <div className="w-full sm:max-w-[655px] sm:min-w-[580px] h-auto relative">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]">
-                    Languages
+                  Languages
                   </h3>
                 </div>
-                <div className={`w-full max-w-[655px] min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 ${showAllLang ? "max-h-[2000px]" : "max-h-[250px]"}`}>
+                <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
                   <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-                    {student?.languages && student.languages.length > 0 ? (
-                      student.languages.map((lang: any) => (
+                  {student?.languages && student.languages.length > 0 ? (
+                    student.languages.map((lang: any) => (
                         <div key={lang.id} className="px-4 py-2 w-full">
                           <div className="flex items-center justify-between">
                             {/* Left side: SVG + Language name */}
@@ -849,13 +946,13 @@ export default function ApplicantPage() {
 
 
               {/* Portfolio Card */}
-              <div className="w-full max-w-[655px] min-w-[580px] h-auto relative">
+              <div className="w-full sm:max-w-[655px] sm:min-w-[580px] h-auto relative">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]">
-                    Portfolio
+                  Portfolio
                   </h3>
                 </div>
-                <div className={`w-full max-w-[655px] min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 ${showAllPortfolio ? "max-h-[2000px]" : "max-h-[250px]"}`}>
+                <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
                   <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
                     {student?.portfolios && student.portfolios.length > 0 ? (
                       student.portfolios.map((port: any) => (
@@ -1097,14 +1194,14 @@ export default function ApplicantPage() {
               ) : (
                 paginatedPayments.map((payment, index) => (
                   <ContractRow
-                    key={payment.id || index}
-                    payment={payment}
-                    showCheckbox={true}
-                    onSideClick={() => {
-                      setEditingPayment(payment);
-                      setIsModalOpen(true);
-                    }}
-                  />
+                key={index}
+                payment={payment}
+                showCheckbox={true}
+                onDelete={() => {
+                  setPaymentToDelete(payment.id);
+                  setDeleteConfirmOpen(true);
+                }}
+              />
                 ))
               )}
             </div>
@@ -1189,6 +1286,87 @@ export default function ApplicantPage() {
           }
         }}
       />
+     {deleteConfirmOpen && (
+  <div
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    onClick={() => setDeleteConfirmOpen(false)}
+  >
+    <div
+      className="bg-white rounded-lg p-6 max-w-md w-full mx-4 skew-x-[-12deg]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="skew-x-[12deg]">
+        <h3 className="text-xl font-bold mb-4">Delete Payment</h3>
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to delete this payment? This action cannot be undone.
+        </p>
+        <div className="flex gap-4 justify-end">
+          <button
+            onClick={() => {
+              setDeleteConfirmOpen(false);
+              setPaymentToDelete(null);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            disabled={deleting}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              if (!paymentToDelete) return;
+              setDeleting(true);
+              try {
+                await deletePayment(paymentToDelete);
+
+                if (contract) {
+                  const contractUuid = contract.id;
+                  const [paymentsResponse, statsResponse] = await Promise.all([
+                    listPayments(1, 100, undefined, undefined, contractUuid),
+                    getPaymentStats(contractUuid),
+                  ]);
+
+                  setPayments(paymentsResponse.items);
+                  setPaymentStats(statsResponse);
+
+                  // Adjust current page if deletion leaves page empty
+                  const newTotalPages = Math.ceil(paymentsResponse.items.length / ITEMS_PER_PAGE);
+                  if (currentPage > newTotalPages) {
+                    setCurrentPage(newTotalPages > 0 ? newTotalPages : 1);
+                  }
+                }
+
+                setDeleteConfirmOpen(false);
+                setPaymentToDelete(null);
+
+                // ✅ Show success toast
+                showToast("Payment deleted successfully!", "success");
+              } catch (error) {
+                console.error("Failed to delete payment:", error);
+
+                // ✅ Show error toast
+                showToast("Failed to delete payment. Please try again.", "error");
+              } finally {
+                setDeleting(false);
+              }
+            }}
+
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={deleting}
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+<Toast
+  message={toastMessage}
+  type={toastType}
+  isVisible={toastVisible}
+  onClose={() => setToastVisible(false)}
+/>
+
     </DashboardLayout>
   );
 }

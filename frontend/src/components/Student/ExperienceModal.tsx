@@ -17,7 +17,7 @@ interface ExperienceData {
   description: string;
   id?: string;
 }
-
+ 
 interface ExperienceModalProps {
   experience?: ExperienceData | null;
   isOpen: boolean;

@@ -1,86 +1,109 @@
-"use client"
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
 
 interface ToastProps {
-  message: string
-  type?: 'success' | 'error'
-  isVisible: boolean
-  onClose: () => void
-  duration?: number
+  message: string;
+  type?: "success" | "error";
+  isVisible: boolean;
+  onClose: () => void;
+  duration?: number;
 }
 
-export const Toast = ({ message, type = 'success', isVisible, onClose, duration = 3000 }: ToastProps) => {
+export const Toast = ({
+  message,
+  type = "success",
+  isVisible,
+  onClose,
+  duration = 3000,
+}: ToastProps) => {
   useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        onClose()
-      }, duration)
-      return () => clearTimeout(timer)
-    }
-  }, [isVisible, duration, onClose])
+    if (!isVisible) return;
+    const timer = setTimeout(onClose, duration);
+    return () => clearTimeout(timer);
+  }, [isVisible, duration, onClose]);
 
-  if (!isVisible) return null
+  if (!isVisible) return null;
+
+  const isSuccess = type === "success";
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-5 fade-in-0">
+    <div className="fixed top-6 right-6 z-[100] animate-in slide-in-from-top-4 fade-in duration-300">
+      {/* Skewed wrapper */}
       <div
         className={`
-          flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg
-          ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}
-          min-w-[300px] max-w-[500px]
+          skew-x-[-12deg]
+          rounded-xl
+          shadow-[0px_12px_24px_-4px_rgba(145,158,171,0.25)]
+          border
+          ${
+            isSuccess
+              ? "bg-[#FFEB9C] border-black"
+              : "bg-[#FFE4E4] border-red-400"
+          }
         `}
       >
-        {type === 'success' ? (
-          <svg
-            className="w-5 h-5 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {/* Unskew content */}
+        <div className="skew-x-[12deg] flex items-start gap-3 px-5 py-4 min-w-[320px] max-w-[480px]">
+          {/* Icon */}
+          <div className="mt-[2px]">
+            {isSuccess ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 13l4 4L19 7"
+                  stroke="#1E1E1E"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M6 18L18 6M6 6l12 12"
+                  stroke="#B42318"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+          </div>
+
+          {/* Message */}
+          <p className="flex-1 text-sm font-medium text-[#1E1E1E] leading-relaxed">
+            {message}
+          </p>
+
+          {/* Close */}
+          <button
+            onClick={onClose}
+            className={`
+              w-7 h-7
+              flex items-center justify-center
+              rounded-full
+              border
+              transition-colors
+              flex-shrink-0
+              ${
+                isSuccess
+                  ? "bg-[#FFF3C4] border-black hover:bg-[#FFEB9C]"
+                  : "bg-[#FFECEC] border-red-400 hover:bg-[#FFDADA]"
+              }
+            `}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        ) : (
-          <svg
-            className="w-5 h-5 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        )}
-        <p className="flex-1 text-sm font-medium">{message}</p>
-        <button
-          onClick={onClose}
-          className="ml-2 text-white/80 hover:text-white transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M6 18L18 6M6 6l12 12"
+                stroke={isSuccess ? "#1E1E1E" : "#B42318"}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
-  )
-}
-
+  );
+};

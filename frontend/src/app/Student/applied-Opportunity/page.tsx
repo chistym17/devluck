@@ -7,6 +7,7 @@ import { useStudentApplicationHandler } from "@/src/hooks/studentapihandler/useS
 import DisputeModal from "@/src/components/Student/DisputeModal";
 import { Toast } from "@/src/components/common/Toast";
 import { createPortal } from "react-dom";
+import SkewedConfirmModal from "@/src/components/common/SkewedConfirmModal";
 
 
 const Card = ({
@@ -494,6 +495,36 @@ const ContractRow = ({ contract,onMainClick,onWithdraw,isWithdrawing,onDisputeCl
 
 export default function ContractListPage() {
 
+      const [confirmOpen, setConfirmOpen] = useState(false);
+      const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
+      const [confirmType, setConfirmType] = useState<"withdraw" | "delete">("withdraw");
+
+      const handleConfirmAction = async () => {
+        if (!selectedApplicationId) return;
+
+        try {
+          if (confirmType === "withdraw") {
+            setWithdrawingApplicationId(selectedApplicationId);
+            await withdrawApplication(selectedApplicationId);
+            setToast({ message: "Application withdrawn successfully!", type: "success" });
+          } else {
+            await deleteApplication(selectedApplicationId);
+            setToast({ message: "Application deleted successfully!", type: "success" });
+          }
+
+          await getApplications(1, 1000);
+        } catch (err: any) {
+          setToast({
+            message: err.message || "Action failed",
+            type: "error",
+          });
+        } finally {
+          setWithdrawingApplicationId(null);
+          setConfirmOpen(false);
+          setSelectedApplicationId(null);
+        }
+      };
+
 
        const { 
         applications, 
@@ -844,7 +875,11 @@ return (
                   router.push(`/Student/applied-Opportunity/${contract.opportunityId}?from=applied`);
                 }
               }}
-              onWithdraw={() => handleWithdraw(contract.originalId)}
+              onWithdraw={() => {
+                setSelectedApplicationId(contract.originalId);
+                setConfirmType("withdraw");
+                setConfirmOpen(true);
+              }}
               isWithdrawing={withdrawingApplicationId !== null}
               showCheckbox={true}
               index={(currentPage - 1) * itemsPerPage + index}
@@ -912,6 +947,22 @@ return (
       setIsModalOpen(false);
   }}
 />
+<SkewedConfirmModal
+  open={confirmOpen}
+  title={confirmType === "withdraw" ? "Withdraw Application" : "Delete Application"}
+  description={
+    confirmType === "withdraw"
+      ? "Are you sure you want to withdraw this application? This action cannot be undone."
+      : "Are you sure you want to delete this application? This action cannot be undone."
+  }
+  confirmText={confirmType === "withdraw" ? "Withdraw" : "Delete"}
+  cancelText="Cancel"
+  danger
+  loading={withdrawingApplicationId !== null}
+  onCancel={() => setConfirmOpen(false)}
+  onConfirm={handleConfirmAction}
+/>
+
   </DashboardLayout>
 );
 }

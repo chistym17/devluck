@@ -2,8 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { DayPicker } from "react-day-picker";
-import { format } from "date-fns";
 import "react-day-picker/dist/style.css";
 import DatePicker from "react-date-picker";
 import "react-date-picker/dist/DatePicker.css";

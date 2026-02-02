@@ -122,7 +122,7 @@ export default function ApplicantPage() {
             {/* Profile Ranking Card */}
             <div className="relative flex flex-col items-center justify-center w-[200px] sm:w-[260px] h-[260px]">
 
-             <div className="relative w-[260px] sm:w-[260px] h-[175px]">
+              <div className="relative w-[260px] sm:w-[260px] h-[175px]">
                 {/* Background number or placeholder */}
                 <div
                   className={`font-barlow font-extrabold leading-[175px] text-[#C2C2C2] flex w-[200px] sm:w-[260px] h-[175px]
@@ -173,7 +173,7 @@ export default function ApplicantPage() {
                   <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
                       {item.value}
                   </span>
-                    <span className="w-[77px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
+                    <span className="w-[100px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
                       {item.label}
                   </span>
                 </div>

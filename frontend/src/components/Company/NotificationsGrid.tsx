@@ -6,7 +6,7 @@ import { useCompanyNotificationHandler } from "../../hooks/companyapihandler/use
 import { createPortal } from "react-dom";
 import NotificationsCardSkeleton from "./NotificationsCardSkeleton";
 
-
+ 
 export default function NotificationsGrid() {
   const {
     notifications,

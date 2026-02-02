@@ -8,6 +8,7 @@ import ContractModal from "@/src/components/Company/ContractModal";
 import DeleteConfirmationModal from "@/src/components/common/DeleteConfirmationModal";
 import { createPortal } from "react-dom";
 import { useContractHandler } from "@/src/hooks/companyapihandler/useContractHandler";
+import { Toast } from "@/src/components/common/Toast";
 
 /* ──────────────────────────────────────────────
    Card Component
@@ -695,6 +696,11 @@ const ContractRow = ({ applicant,onMainClick,onEdit,onDelete,showCheckbox = fals
 
 
 export default function ContractListPage() {
+
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+
   const [itemsPerPage, setItemsPerPage] = useState(10);
   useEffect(() => {
     const updateItemsPerPage = () => {
@@ -1224,11 +1230,16 @@ return (
             listContracts(currentPage, itemsPerPage, searchQuery || undefined, statusFilter),
             refreshStats()
           ]);
+          setToastMessage("Contract deleted successfully");
+          setToastType("success");
+          setToastVisible(true);
           setDeleteConfirmOpen(false);
           setContractToDelete(null);
         } catch (error) {
           console.error("Failed to delete contract:", error);
-          alert("Failed to delete contract. Please try again.");
+          setToastMessage("Failed to delete contract. Please try again.");
+          setToastType("error");
+          setToastVisible(true);
         } finally {
           setDeleting(false);
         }
@@ -1236,6 +1247,12 @@ return (
       title="Delete Contract"
       message="Are you sure you want to delete this contract? This action cannot be undone."
       isLoading={deleting}
+    />
+    <Toast
+      isVisible={toastVisible}
+      message={toastMessage}
+      type={toastType}
+      onClose={() => setToastVisible(false)}
     />
   </DashboardLayout>
 );

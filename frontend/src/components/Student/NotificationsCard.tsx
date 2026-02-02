@@ -46,7 +46,7 @@ export default function NotificationsCard({
       user_id,
     });
   };
-
+ 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "No date";
     return new Date(dateString).toLocaleDateString("en-GB", {

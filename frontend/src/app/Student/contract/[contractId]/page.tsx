@@ -142,8 +142,8 @@ export default function contractDetailPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="p-6 text-center">
-          <p>Loading contract...</p>
+        <div className="flex h-screen items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
         </div>
       </DashboardLayout>
     );
@@ -152,15 +152,17 @@ export default function contractDetailPage() {
   if (error || !contract) {
     return (
       <DashboardLayout>
-        <div className="p-6 text-center">
-          <h2 className="text-xl font-bold">Contract Not Found</h2>
-          <p className="text-red-500 mt-2">{error || "Contract not found"}</p>
-          <button
-            className="mt-4 px-4 py-2 bg-yellow-300 rounded hover:bg-yellow-400"
-            onClick={() => router.back()}
-          >
-            Go Back
-          </button>
+        <div className="flex items-center justify-center h-screen">
+          <div className="p-6 text-center ">
+            <h2 className="text-xl font-bold">Contract Not Found</h2>
+            <p className="text-red-500 mt-2">{error || "Contract not found"}</p>
+            <button
+              className="mt-4 px-4 py-2 bg-yellow-300 rounded hover:bg-yellow-400"
+              onClick={() => router.back()}
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </DashboardLayout>
     );

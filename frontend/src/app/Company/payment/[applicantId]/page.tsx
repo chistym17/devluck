@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 import PaymentModal from "@/src/components/Company/PaymentModal";
 import { useContractHandler } from "@/src/hooks/companyapihandler/useContractHandler";
 import { usePaymentHandler } from "@/src/hooks/companyapihandler/usePaymentHandler";
+import { Toast } from "@/src/components/common/Toast";
 
 interface Payment {
   id: string;
@@ -389,6 +390,16 @@ const ContractRow = ({ payment, onSideClick, onDelete, showCheckbox = false }: C
 
     const ITEMS_PER_PAGE = 6;
 export default function PaymentPage() {
+
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [toastVisible, setToastVisible] = useState(false);
+
+    const showToast = (message: string, type: "success" | "error" = "success") => {
+      setToastMessage(message);
+      setToastType(type);
+      setToastVisible(true);
+    };
 
     // ---------------modal popup--------
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -830,6 +841,7 @@ return (
                   setDeleting(true);
                   try {
                     await deletePaymentApi(paymentToDelete);
+
                     if (contract) {
                       const contractUuid = contract.id;
                       const [paymentsResponse, statsResponse] = await Promise.all([
@@ -838,12 +850,23 @@ return (
                       ]);
                       setPayments(paymentsResponse.items);
                       setPaymentStats(statsResponse);
+
+                      // Adjust current page if needed
+                      const newTotalPages = Math.ceil(paymentsResponse.items.length / ITEMS_PER_PAGE);
+                      if (currentPage > newTotalPages) {
+                        setCurrentPage(newTotalPages > 0 ? newTotalPages : 1);
+                      }
                     }
+
                     setDeleteConfirmOpen(false);
                     setPaymentToDelete(null);
+
+                    // ✅ Show success toast
+                    showToast("Payment deleted successfully!", "success");
                   } catch (error) {
                     console.error("Failed to delete payment:", error);
-                    alert("Failed to delete payment. Please try again.");
+                    // ✅ Show error toast
+                    showToast("Failed to delete payment. Please try again.", "error");
                   } finally {
                     setDeleting(false);
                   }
@@ -853,11 +876,19 @@ return (
               >
                 {deleting ? "Deleting..." : "Delete"}
               </button>
+
             </div>
           </div>
         </div>
       </div>
     )}
+    <Toast
+      message={toastMessage}
+      type={toastType}
+      isVisible={toastVisible}
+      onClose={() => setToastVisible(false)}
+    />
+
   </DashboardLayout>
 );
 }

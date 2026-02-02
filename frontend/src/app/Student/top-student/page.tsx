@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useMemo, useRef, useEffect } from "react";
 import DashboardLayout from "@/src/components/Student/DashboardLayout";
-import { mockApplicants } from "@/src/mocks/mockApplicants";
+import { useTopStudentsHandler } from "@/src/hooks/studentapihandler/useTopStudentsHandler";
 import { createPortal } from "react-dom";
 
 interface ClipImageProps {
@@ -70,13 +70,21 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
 
 
 
+interface ApplicantCardProps {
+  applicant: {
+    id: string;
+    name: string;
+    image: string | null;
+    profileComplete: number;
+    totalActivity: number;
+  };
+  onClick?: () => void;
+}
+
 const ApplicantCard = ({
   applicant,
   onClick,
-}: {
-  applicant: typeof mockApplicants[0];
-  onClick?: () => void;
-}) => {
+}: ApplicantCardProps) => {
   return (
     <div className="relative w-[268px] h-[462px]">
       {/* SVG Card Body */}
@@ -456,7 +464,7 @@ const ApplicantCard = ({
           }}
         >
           <ClipImage
-            src={applicant.image1}
+            src={applicant.image || undefined}
             width={239}
             height={271}
           />
@@ -613,11 +621,11 @@ const ApplicantCard = ({
             color: "#1E1E1E",
 
             display: "flex",
-            flexDirection: "column", // makes characters stack vertically
+            flexDirection: "column",
             alignItems: "center",
           }}
         >
-          {applicant.city.split("").map((char, index) => (
+          {"R i y a d h".split("").map((char, index) => (
             <span key={index}>{char}</span>
           ))}
         </div>
@@ -735,7 +743,7 @@ const ApplicantCard = ({
 };
 
 type ContractRowProps = {
-  applicant: typeof mockApplicants[0];
+  applicant: any;
   onMainClick?: () => void;
   onSideClick?: () => void;
   showCheckbox?: boolean;
@@ -921,64 +929,53 @@ const ContractRow = ({ applicant,onMainClick,onSideClick,showCheckbox = false }:
 };
 
 export default function ApplicantPage() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const { students, loading, error, totalPages, getTopStudents } = useTopStudentsHandler();
 
-  //---------------------filter----------------------------------
-      const router = useRouter();
-      const [searchQuery, setSearchQuery] = useState("");
-      const [currentPage, setCurrentPage] = useState(1);
-  
-      // 🔍 Filter applicants
-      const filteredApplicants = useMemo(() => {
-        return mockApplicants.filter(applicant => {
-          // Search filter
-          const searchMatch =
-            !searchQuery.trim() ||
-            applicant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.applicantId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.contractTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.startDate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            applicant.endDate.toLowerCase().includes(searchQuery.toLowerCase());
-  
-          return searchMatch;
-        });
-      }, [searchQuery]);
-  
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-      // 📄 Pagination
-      const [itemsPerPage, setItemsPerPage] = useState(10); // default 10 for desktop
-      useEffect(() => {
-        const updateItemsPerPage = () => {
-          if (window.innerWidth < 640) { // mobile
-            setItemsPerPage(5);
-          } else {
-            setItemsPerPage(10); // desktop
-          }
-        };
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      if (window.innerWidth < 640) {
+        setItemsPerPage(5);
+      } else {
+        setItemsPerPage(10);
+      }
+    };
 
-        updateItemsPerPage(); // run once on mount
-        window.addEventListener("resize", updateItemsPerPage); // run on resize
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
 
-        return () => window.removeEventListener("resize", updateItemsPerPage);
-      }, []);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
+  }, []);
 
-      const totalPages = Math.ceil(filteredApplicants.length / itemsPerPage);
-      
-      const paginatedApplicants = filteredApplicants.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-      );
-      
-      const goToPage = (page: number) => {
-        if (page >= 1 && page <= totalPages) setCurrentPage(page);
-      };
-      
-      const goToPrevious = () => {
-        if (currentPage > 1) setCurrentPage(prev => prev - 1);
-      };
-      
-      const goToNext = () => {
-        if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
-      };
+  useEffect(() => {
+    getTopStudents(currentPage, itemsPerPage, searchQuery);
+  }, [currentPage, itemsPerPage, searchQuery]);
+
+  const paginatedApplicants = useMemo(() => {
+    return students.map(student => ({
+      id: student.id,
+      name: student.name,
+      image: student.image,
+      profileComplete: student.profileComplete,
+      totalActivity: student.totalActivity,
+    }));
+  }, [students]);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  const goToPrevious = () => {
+    if (currentPage > 1) setCurrentPage(prev => prev - 1);
+  };
+
+  const goToNext = () => {
+    if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+  };
   
 
   return (
@@ -993,15 +990,29 @@ export default function ApplicantPage() {
           
             
         
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 max-w-[1400px] mx-auto">
-          {paginatedApplicants.map((applicant, index) => (
-            <ApplicantCard
-              key={index}
-              applicant={applicant}
-             onClick={() => router.push(`/Student/top-student/${applicant.applicantId}`)}
-            />
-          ))}
-        </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="text-lg text-gray-600">Loading top students...</div>
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="text-lg text-red-600">{error}</div>
+            </div>
+          ) : paginatedApplicants.length === 0 ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="text-lg text-gray-600">No students found</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 max-w-[1400px] mx-auto">
+              {paginatedApplicants.map((applicant) => (
+                <ApplicantCard
+                  key={applicant.id}
+                  applicant={applicant}
+                  onClick={() => router.push(`/Student/top-student/${applicant.id}`)}
+                />
+              ))}
+            </div>
+          )}
      
 
 

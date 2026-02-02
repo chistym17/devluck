@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useSidebar } from "@/src/lib/sidebarContext";
-import { mockNotifications, type Notification } from "@/src/mocks/notifications.mock";
+import { useUnreadNotifications } from "@/src/hooks/studentapihandler/useUnreadNotifications";
 
 
+  
 const LeftSidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobileOpen: (open: boolean) => void }) => {
   const pathname = usePathname();
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -17,8 +18,7 @@ const LeftSidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMo
   const glowLeftRef = useRef<HTMLDivElement>(null);
 
   // Calculate unread notifications
-  const unreadCount = mockNotifications.filter(n => !n.read).length;
-  const unreadLabel = unreadCount > 9 ? "9+" : unreadCount.toString();
+  const { unreadLabel, unreadCount } = useUnreadNotifications()
 
   // Detect mobile screen
   useEffect(() => {
@@ -27,7 +27,7 @@ const LeftSidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMo
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
+ 
   // Glow effect after layout
   useEffect(() => {
     const timer = setTimeout(() => {

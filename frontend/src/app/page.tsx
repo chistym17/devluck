@@ -7,7 +7,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 export default function Home() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
-
+  
   useEffect(() => {
     if (loading) return;
 

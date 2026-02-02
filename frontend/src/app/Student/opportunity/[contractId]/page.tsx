@@ -918,8 +918,8 @@ export default function contractDetailPage() {
   if (opportunityLoading) {
     return (
       <DashboardLayout>
-        <div className="p-6 text-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black mx-auto" />
+        <div className="flex h-screen items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
         </div>
       </DashboardLayout>
     );
@@ -928,14 +928,16 @@ export default function contractDetailPage() {
   if (!opportunity) {
     return (
       <DashboardLayout>
-        <div className="p-6 text-center">
-          <h2 className="text-xl font-bold">Opportunity Not Found</h2>
-          <button
-            className="mt-4 px-4 py-2 bg-yellow-300 rounded hover:bg-yellow-400"
-            onClick={() => router.push("/Student/opportunity")}
-          >
-            Go Back
-          </button>
+        <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+          <div className="p-6 text-center">
+            <h2 className="text-xl font-bold">Opportunity Not Found</h2>
+            <button
+              className="mt-4 px-4 py-2 bg-yellow-300 rounded hover:bg-yellow-400"
+              onClick={() => router.push("/Student/opportunity")}
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </DashboardLayout>
     );

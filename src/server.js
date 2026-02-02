@@ -17,6 +17,7 @@ import companyApplicationRoutes from './routes/company/application.js'
 import companyReviewRoutes from './routes/company/review.js'
 import companyTopApplicantRoutes from './routes/company/topApplicant.js'
 import companyTopCompanyRoutes from './routes/company/topCompany.js'
+import companyUniversityRoutes from './routes/company/university.js'
 import studentProfileRoutes from './routes/student/profile.js'
 import studentSkillRoutes from './routes/student/skill.js'
 import studentExperienceRoutes from './routes/student/experience.js'
@@ -32,6 +33,7 @@ import studentPaymentRoutes from './routes/student/payment.js'
 import studentReviewRoutes from './routes/student/review.js'
 import studentDashboardRoutes from './routes/student/dashboard.js'
 import studentNotificationRoutes from './routes/student/notification.js'
+import studentTopStudentsRoutes from './routes/student/topStudents.js'
 import companyNotificationRoutes from './routes/company/notification.js'
 import uploadRoutes from './routes/upload.js'
 import { requestLogger } from './middleware/requestLogger.js'
@@ -78,6 +80,7 @@ app.use('/api/company', companyApplicationRoutes)
 app.use('/company', companyReviewRoutes)
 app.use('/api/company', companyTopApplicantRoutes)
 app.use('/api/company', companyTopCompanyRoutes)
+app.use('/api/company', companyUniversityRoutes)
 app.use('/api/student', studentProfileRoutes)
 app.use('/api/student', studentSkillRoutes)
 app.use('/api/student', studentExperienceRoutes)
@@ -93,6 +96,7 @@ app.use('/api/student', studentPaymentRoutes)
 app.use('/api/student', studentReviewRoutes)
 app.use('/api/student', studentDashboardRoutes)
 app.use('/api/student', studentNotificationRoutes)
+app.use('/api/student/top-students', studentTopStudentsRoutes)
 app.use('/api/company', companyNotificationRoutes)
 app.use('/api/upload', uploadRoutes)
 

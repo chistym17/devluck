@@ -1,39 +1,49 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {useParams } from "next/navigation";
 import DashboardLayout from "@/src/components/Student/DashboardLayout";
-import { mockApplicants } from "@/src/mocks/mockApplicants";
-import { educationData } from "@/src/mocks/mockEducation";
-import { experienceData } from "@/src/mocks/mockExperience";
-import { languageData  } from "@/src/mocks/mockLanguages";
-import { portfolioData  } from "@/src/mocks/mockPortfolio";
+import { useTopStudentsHandler } from "@/src/hooks/studentapihandler/useTopStudentsHandler";
 
 export default function ApplicantPage() {
-  const params = useParams(); // { applicantId: "456" }
-  const {applicantId } = params;
+  const params = useParams();
+  const { applicantId } = params;
+  const { student: applicant, loading, error, getTopStudentById } = useTopStudentsHandler();
 
-  // Find applicant by ID
-  const applicant = mockApplicants.find(a => a.applicantId === applicantId);
+  useEffect(() => {
+    if (applicantId && typeof applicantId === 'string') {
+      getTopStudentById(applicantId);
+    }
+  }, [applicantId]);
 
- if (!applicant) {
-  return (
-    <DashboardLayout>
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="bg-white shadow-md rounded-lg p-8 sm:p-12 text-center max-w-md w-full">
-          <h2 className="text-2xl sm:text-3xl font-bold text-red-600 mb-4 flex items-center justify-center gap-2">
-            ❌ Applicant Not Found
-          </h2>
-          <p className="text-[#555] text-base sm:text-lg">
-            No applicant with ID: <span className="font-semibold text-[#1E1E1E]">{applicantId}</span> was found.
-          </p>
-          <p className="text-[#777] mt-2 text-sm">
-            Please check the ID or go back to the <a href="/Student/top-student" className="text-blue-500 hover:underline">top-student</a>.
-          </p>
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="text-lg text-gray-600">Loading student details...</div>
         </div>
-      </div>
-    </DashboardLayout>
-  );
-}
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !applicant) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="bg-white shadow-md rounded-lg p-8 sm:p-12 text-center max-w-md w-full">
+            <h2 className="text-2xl sm:text-3xl font-bold text-red-600 mb-4 flex items-center justify-center gap-2">
+              ❌ Student Not Found
+            </h2>
+            <p className="text-[#555] text-base sm:text-lg">
+              {error || `No student with ID: ${applicantId} was found.`}
+            </p>
+            <p className="text-[#777] mt-2 text-sm">
+              Please check the ID or go back to the <a href="/Student/top-student" className="text-blue-500 hover:underline">top-student</a>.
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
 
 
@@ -70,14 +80,14 @@ export default function ApplicantPage() {
               {/* Name + Button Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-3">
                 <h1 className="font-barlow font-extrabold text-[40px] leading-[64px] text-[#1E1E1E]">
-                  {applicant ? applicant.name : applicantId}
+                  {applicant?.name || applicantId}
                 </h1>
 
                 <div
                   className="relative w-[120px] h-[35px] skew-x-[-12deg] bg-[#FFEB9C] flex items-center justify-center overflow-hidden rounded-md hover:bg-[#FFE066] transition duration-200 hover:scale-105"
                 >
                   <span className="skew-x-[12deg] font-bold text-[14px] text-[#1E1E1E]">
-                    {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+                    {applicant?.status ? applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1) : 'Active'}
                   </span>
                 </div>
 
@@ -85,11 +95,11 @@ export default function ApplicantPage() {
 
               {/* Description */}
               <p className="font-publicSans text-[16px] leading-[24px] text-[#1E1E1E] break-words">
-                {applicant
+                {applicant?.description
                   ? applicant.description.length > 250
                     ? applicant.description.slice(0, 250) + "..."
                     : applicant.description
-                  : "Applicant description not found."}
+                  : "No description available."}
               </p>
             </div>
 
@@ -103,7 +113,7 @@ export default function ApplicantPage() {
               <div className="relative w-[260px] sm:w-[260px] h-[175px]">
                 {/* Background number or placeholder */}
                 <div className="font-barlow font-extrabold text-[200px] leading-[175px] text-[#C2C2C2] flex  w-[200px] sm:w-[260px] h-[175px]">
-                  {applicant ? applicant.profileRanking : "Applicant Ranking not found."}
+                  {applicant?.profileRanking || "N/A"}
                 </div>
 
                 {/* Profile Ranking label */}
@@ -119,7 +129,7 @@ export default function ApplicantPage() {
                   </span>
                   
                   <span className="font-bold text-[12px] leading-[18px] uppercase text-[#1E1E1E]">
-                    {applicant.profileComplete}%
+                    {applicant?.profileComplete || 0}%
                   </span>
                 </div>
 
@@ -128,7 +138,7 @@ export default function ApplicantPage() {
                   {/* Progress Fill */}
                   <div
                     className="absolute left-0.5 top-1/2 h-[14px] -translate-y-1/2 rounded bg-[#FFEB9C]"
-                    style={{ width: `${applicant.profileComplete}%` }}
+                    style={{ width: `${applicant?.profileComplete || 0}%` }}
                   />
 
                 </div>
@@ -145,7 +155,7 @@ export default function ApplicantPage() {
                 <div className="flex flex-col justify-center items-start w-[77px] h-[40px] flex-none gap-1">
                   {/* body2 text */}
                   <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
-                    {applicant?.salaryPaid}
+                    ${applicant?.salaryExpectation || 'N/A'}
                   </span>
                   {/* caption text */}
                   <span className="w-[49px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
@@ -182,7 +192,7 @@ export default function ApplicantPage() {
                 <div className="flex flex-col justify-center items-start w-[77px] h-[40px] flex-none gap-1">
                   {/* body2 text */}
                   <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
-                    {applicant?.city}
+                    Riyadh
                   </span>
                   {/* caption text */}
                   <span className="w-[49px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
@@ -272,10 +282,8 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-              {experienceData.filter(exp => exp.applicantId === applicant?.applicantId).length ? (
-                experienceData
-                  .filter(exp => exp.applicantId === applicant?.applicantId)
-                  .map((exp) => (
+              {applicant?.experiences?.length ? (
+                applicant.experiences.map((exp: any) => (
                     <div key={exp.id} className="px-4 py-2 w-full">
                       <div className="flex items-center justify-between">
                         {/* Left side: SVG + Role */}
@@ -284,12 +292,12 @@ export default function ApplicantPage() {
                             <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                           </svg>
                           <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
-                            {exp.role}
+                            {exp?.role || 'N/A'}
                           </h4>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-[12px] text-[#555] transform-none">
-                        <span className="font-publicSans">{exp.companyName}</span>
+                        <span className="font-publicSans">{exp?.companyName || 'N/A'}</span>
                         {/* small rotated square */}
                         <svg
                           width="8"
@@ -301,11 +309,15 @@ export default function ApplicantPage() {
                         >
                           <rect x="3.53564" width="5" height="5" fill="black" />
                         </svg>
-                        <span className="font-publicSans transform-none">{exp.date}</span>
+                        <span className="font-publicSans transform-none">{`${exp?.startDate || ''} - ${exp?.endDate || ''}`}</span>
                       </div>
                       <p className="font-publicSans text-[12px] text-[#1E1E1E] mt-1 break-words transform-none">
-                        {exp.description.split(" ").slice(0, 10).join(" ")}
-                        {exp.description.split(" ").length > 10 ? "..." : ""}
+                        {exp?.description ? (
+                          <>
+                            {exp.description.split(" ").slice(0, 10).join(" ")}
+                            {exp.description.split(" ").length > 10 ? "..." : ""}
+                          </>
+                        ) : 'No description'}
                       </p>
                     </div>
                   ))
@@ -326,10 +338,8 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-              {educationData.filter(edu => edu.applicantId === applicant?.applicantId).length ? (
-                educationData
-                  .filter(edu => edu.applicantId === applicant?.applicantId)
-                  .map((edu) => (
+              {applicant?.educations?.length ? (
+                applicant.educations.map((edu: any) => (
                     <div key={edu.id} className="px-4 py-2 w-full">
                       <div className="flex items-center justify-between">
                         {/* Left side: SVG + Major */}
@@ -338,12 +348,12 @@ export default function ApplicantPage() {
                             <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                           </svg>
                           <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
-                            {edu.major}
+                            {edu?.major || 'N/A'}
                           </h4>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-[12px] text-[#555] transform-none">
-                        <span className="font-publicSans">{edu.name}</span>
+                        <span className="font-publicSans">{edu?.name || 'N/A'}</span>
                         
                         {/* small rotated square */}
                         <svg
@@ -357,11 +367,15 @@ export default function ApplicantPage() {
                           <rect x="3.53564" width="5" height="5" fill="black" />
                         </svg>
 
-                        <span className="font-publicSans">{edu.date}</span>
+                        <span className="font-publicSans">{`${edu?.startDate || ''} - ${edu?.endDate || ''}`}</span>
                       </div>
                       <p className="font-publicSans text-[12px] text-[#1E1E1E] mt-1">
-                        {edu.description.split(" ").slice(0, 10).join(" ")}
-                        {edu.description.split(" ").length > 10 ? "..." : ""}
+                        {edu?.description ? (
+                          <>
+                            {edu.description.split(" ").slice(0, 10).join(" ")}
+                            {edu.description.split(" ").length > 10 ? "..." : ""}
+                          </>
+                        ) : 'No description'}
                       </p>
                     </div>
                   ))
@@ -385,10 +399,8 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-              {languageData.filter(lang => lang.applicantId === applicant?.applicantId).length ? (
-                languageData
-                  .filter(lang => lang.applicantId === applicant?.applicantId)
-                  .map((lang) => (
+              {applicant?.languages?.length ? (
+                applicant.languages.map((lang: any) => (
                     <div key={lang.id} className="px-4 py-2 w-full">
                       <div className="flex items-center justify-between">
                         {/* Left side: SVG + Language name */}
@@ -397,14 +409,14 @@ export default function ApplicantPage() {
                             <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                           </svg>
                           <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
-                            {lang.name}
+                            {lang?.name || 'N/A'}
                           </h4>
                         </div>
                       </div>
 
                       {/* Level text (optional) */}
                       <p className="font-publicSans text-[12px] text-[#555] mt-1 transform-none">
-                        {lang.level}
+                        {lang?.level || 'N/A'}
                       </p>
                     </div>
                   ))
@@ -425,10 +437,8 @@ export default function ApplicantPage() {
             </div>
             <div className={`w-full sm:max-w-[655px] sm:min-w-[580px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
               <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-                {portfolioData.filter(port => port.applicantId === applicant?.applicantId).length ? (
-                  portfolioData
-                    .filter(port => port.applicantId === applicant?.applicantId)
-                    .map((port) => (
+                {applicant?.portfolios?.length ? (
+                  applicant.portfolios.map((port: any) => (
                       <div key={port.id} className="px-4 py-2 w-full">
                         <div className="flex items-center justify-between">
                           {/* Left side: SVG + Portfolio Name */}
@@ -437,7 +447,7 @@ export default function ApplicantPage() {
                               <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
                             </svg>
                             <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E]">
-                              {port.name}
+                              {port?.name || 'N/A'}
                             </h4>
                           </div>
                         </div>
@@ -445,7 +455,7 @@ export default function ApplicantPage() {
                         {/* Portfolio link */}
                         <div className="w-full flex items-center gap-2 mt-1">
                           {/* Conditional SVG icon */}
-                          {port.name.toLowerCase() === "github" ? (
+                          {port?.name?.toLowerCase() === "github" ? (
                             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <rect width="40" height="40" rx="8" fill="#FFEB9C"/>
                               <g clipPath="url(#clip0)">
@@ -466,8 +476,12 @@ export default function ApplicantPage() {
 
                           {/* Link text */}
                           <p className="font-publicSans text-[12px] text-[#555] break-words transform-none">
-                            {port.link.split(" ").slice(0, 10).join(" ")}
-                            {port.link.split(" ").length > 10 ? "..." : ""}
+                            {port?.link ? (
+                              <>
+                                {port.link.split(" ").slice(0, 10).join(" ")}
+                                {port.link.split(" ").length > 10 ? "..." : ""}
+                              </>
+                            ) : 'No link'}
                           </p>
                         </div>
                       </div>

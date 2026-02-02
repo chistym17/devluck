@@ -779,24 +779,44 @@ export default function TopCompanyPage() {
     const reviews = companyReviews;
 
     if (loading) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center min-h-screen">
-                    <p className="text-gray-500">Loading company details...</p>
-                </div>
-            </DashboardLayout>
-        );
-    }
-
-    if (error || !company) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center min-h-screen">
-                    <p className="text-red-500">{error || 'Company not found'}</p>
-                </div>
-            </DashboardLayout>
-        );
-    }
+            return (
+                <DashboardLayout>
+                    <div className="flex h-screen items-center justify-center">
+                        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
+                    </div>
+                </DashboardLayout>
+            );
+        }
+    
+        if (error || !company) {
+            return (
+                <DashboardLayout>
+                    <div className="flex items-center justify-center min-h-[80vh]">
+                        <div className="bg-white shadow-md rounded-lg p-8 sm:p-12 text-center max-w-md w-full">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-red-600 mb-4 flex items-center justify-center gap-2">
+                            ❌ Company Not Found
+                        </h2>
+    
+                        <p className="text-[#555] text-base sm:text-lg">
+                            {error || "The requested company could not be found."}
+                        </p>
+    
+                        <p className="text-[#777] mt-2 text-sm">
+                            Please check the ID or go back to the{" "}
+                            <a
+                            href="/Company/top-company"
+                            className="text-blue-500 hover:underline font-medium"
+                            >
+                            Top companies
+                            </a>
+                            .
+                        </p>
+                        </div>
+                    </div>
+                </DashboardLayout>
+    
+            );
+        }
 
     /* -----------------------------
         FAKE UPLOAD (SIMULATION)

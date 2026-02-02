@@ -40,17 +40,21 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
           <div className="flex gap-4 justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors skew-x-[-12deg]"
               disabled={isLoading}
             >
+              <span className=" flex items-center justify-center skew-x-[12deg]">
               Cancel
+              </span>
             </button>
             <button
               onClick={onConfirm}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed skew-x-[-12deg]"
               disabled={isLoading}
             >
+              <span className=" flex items-center justify-center skew-x-[12deg]">
               {isLoading ? "Deleting..." : "Delete"}
+              </span>
             </button>
           </div>
         </div>

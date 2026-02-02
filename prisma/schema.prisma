@@ -325,6 +325,7 @@ model Company {
   reviews           Review[]
   addresses         Address[]
   settings          CompanySettings?
+  universities      University[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -422,4 +423,31 @@ model ApplicationAnswer {
   updatedAt     DateTime    @updatedAt
 
   @@map("application_answers")
+}
+
+model University {
+  id                        String   @id @default(uuid())
+  name                      String
+  address                   String?
+  email                     String?
+  phoneNumber               String?
+  description               String?
+  corporate                 String?
+  website                   String?
+  image                     String?
+  programs                  String[]
+  totalStudents             Int      @default(0)
+  ugStudents                Int      @default(0)
+  pgStudents                Int      @default(0)
+  staff                     Int      @default(0)
+  totalDoctors              Int      @default(0)
+  qsWorldRanking            Int?
+  qsRankingBySubject        Int?
+  qsSustainabilityRanking   Int?
+  companyId                 String?
+  company                   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("universities")
 }

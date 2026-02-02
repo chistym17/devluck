@@ -222,13 +222,8 @@ export default function TopApplicantPage() {
   if (loading && topApplicants.length === 0) {
     return (
       <DashboardLayout>
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-[28px] font-bold text-[#1E1E1E] mb-8">
-            Top Applicants
-          </h1>
-          <div className="flex justify-center py-10">
-            <p className="text-gray-500">Loading applicants...</p>
-          </div>
+        <div className="flex h-screen items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
         </div>
       </DashboardLayout>
     );

@@ -16,7 +16,7 @@ const truncateId = (id: string) => {
 };
 import ContractModal from "@/src/components/Company/ContractTemplateModal";
 import DeleteConfirmationModal from "@/src/components/common/DeleteConfirmationModal";
-import { useRouter } from "next/navigation";
+import { Toast } from "@/src/components/common/Toast";
 import { useContractTemplateHandler } from "@/src/hooks/companyapihandler/useContractTemplateHandler";
 
 
@@ -514,6 +514,10 @@ const ContractRow = ({ contract, onView, onDelete, showCheckbox = false }: Contr
 ────────────────────────────────────────────── */
 
 export default function ContractTemplatePage() {
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+
   const [showApplicants, setShowApplicants] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -991,11 +995,16 @@ export default function ContractTemplatePage() {
               listContractTemplates(currentPage, itemsPerPage, searchQuery),
               fetchStats()
             ]);
+            setToastMessage("Contract-template deleted successfully");
+            setToastType("success");
+            setToastVisible(true);
             setDeleteConfirmOpen(false);
             setTemplateToDelete(null);
           } catch (error) {
             console.error("Failed to delete contract template:", error);
-            alert("Failed to delete contract template. Please try again.");
+            setToastMessage("Failed to delete contract-template. Please try again.");
+            setToastType("error");
+            setToastVisible(true);
           } finally {
             setDeleting(false);
           }

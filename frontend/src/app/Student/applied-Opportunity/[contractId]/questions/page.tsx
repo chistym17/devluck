@@ -123,7 +123,7 @@ export default function ContractQuestionsPage() {
   if (questionsLoading) {
     return (
       <DashboardLayout>
-        <div className="px-6 py-6 min-h-[calc(100vh-120px)] flex items-center justify-center">
+        <div className="flex h-screen items-center justify-center">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
         </div>
       </DashboardLayout>
@@ -192,7 +192,7 @@ export default function ContractQuestionsPage() {
                     value={answers[q.id] || ""}
                     onChange={(e) => handleChange(q.id, e.target.value)}
                     placeholder="Your answer..."
-                    className="absolute top-0 left-0 w-full h-full bg-transparent outline-none px-5 pt-4 pb-2 text-[14px] text-[#171717cc] resize-none"
+                    className="absolute top-0 left-0 w-full h-full bg-transparent outline-none px-5 pt-4 pb-2 text-[14px] text-[#171717cc] resize-none skew-x-[12deg]"
                     />  
 
                   </div>

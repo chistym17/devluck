@@ -22,7 +22,7 @@ interface ListTopApplicantsResponse {
   pageSize: number
   totalPages: number
 }
-
+ 
 interface TopApplicantDetail extends TopApplicant {
   skills?: Array<{
     skill: {

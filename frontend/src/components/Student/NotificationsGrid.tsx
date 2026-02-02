@@ -82,7 +82,7 @@ export default function NotificationsGrid() {
     }
   };
 
-
+ 
   const handleClosePopup = () => {
     setIsPopupOpen(false);
     setSelectedNotification(null);

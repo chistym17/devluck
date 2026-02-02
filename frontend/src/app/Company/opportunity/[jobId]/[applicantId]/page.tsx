@@ -173,7 +173,7 @@ export default function ApplicantPage() {
                   <span className="w-[77px] h-[22px] text-[14px] font-normal leading-[22px] text-[#1E1E1E] flex items-center">
                       {item.value}
                   </span>
-                    <span className="w-[77px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
+                    <span className="w-[100px] h-[18px] text-[12px] font-normal leading-[18px] text-[#00000090] flex items-center">
                       {item.label}
                   </span>
                 </div>

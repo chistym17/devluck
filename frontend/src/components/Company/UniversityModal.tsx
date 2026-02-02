@@ -8,17 +8,22 @@ import "react-day-picker/dist/style.css";
 
 interface UniversityData {
   name: string;
-  location: string;
-  phoneNumber: string;
-  email: string;
-  website: string;
-  totalStudents: number;
-  totalGraduates: number;
-  totalDoctors: number;
-  totalPrograms: number;
-  totalStaff: number;
-  description: string;
-  programs: string[];
+  address?: string;
+  phoneNumber?: string;
+  email?: string;
+  website?: string;
+  description?: string;
+  corporate?: string;
+  image?: string;
+  totalStudents?: number;
+  ugStudents?: number;
+  pgStudents?: number;
+  totalDoctors?: number;
+  staff?: number;
+  qsWorldRanking?: number;
+  qsRankingBySubject?: number;
+  qsSustainabilityRanking?: number;
+  programs?: string[];
 }
 
 interface UniversityModalProps {
@@ -348,15 +353,20 @@ const UniversityModal: React.FC<UniversityModalProps> = ({
   const [formData, setFormData] = useState<UniversityData>({
     name: "",
     description: "",
-    location: "",
+    address: "",
     website: "",
     email: "",
     phoneNumber: "",
+    corporate: "",
+    image: "",
     totalStudents: 0,
-    totalGraduates: 0,
-    totalPrograms: 0,
-    totalStaff: 0,
+    ugStudents: 0,
+    pgStudents: 0,
+    staff: 0,
     totalDoctors: 0,
+    qsWorldRanking: undefined,
+    qsRankingBySubject: undefined,
+    qsSustainabilityRanking: undefined,
     programs: [],
   });
   const [loading, setLoading] = useState(false);
@@ -367,15 +377,20 @@ const UniversityModal: React.FC<UniversityModalProps> = ({
       setFormData({
        name: "",
         description: "",
-        location: "",
+        address: "",
         website: "",
         email: "",
         phoneNumber: "",
+        corporate: "",
+        image: "",
         totalStudents: 0,
-        totalGraduates: 0,
-        totalPrograms: 0,
-        totalStaff: 0,
+        ugStudents: 0,
+        pgStudents: 0,
+        staff: 0,
         totalDoctors: 0,
+        qsWorldRanking: undefined,
+        qsRankingBySubject: undefined,
+        qsSustainabilityRanking: undefined,
         programs: [],
       });
   }, [university, isOpen]);
@@ -457,35 +472,49 @@ const UniversityModal: React.FC<UniversityModalProps> = ({
     <ParallelogramInput
       label="University Description"
       placeholder="Enter description"
-      value={formData.description}
+      value={formData.description || ""}
       onChange={(e) => handleInputChange("description", e.target.value)}
     />
 
     <ParallelogramInput
-      label="Location"
-      placeholder="City / Country"
-      value={formData.location}
-      onChange={(e) => handleInputChange("location", e.target.value)}
+      label="Address"
+      placeholder="Full address"
+      value={formData.address || ""}
+      onChange={(e) => handleInputChange("address", e.target.value)}
+    />
+
+    <ParallelogramInput
+      label="Corporate / Governance"
+      placeholder="e.g., Board of Trustees"
+      value={formData.corporate || ""}
+      onChange={(e) => handleInputChange("corporate", e.target.value)}
+    />
+
+    <ParallelogramInput
+      label="Image URL"
+      placeholder="/images/university.jpg"
+      value={formData.image || ""}
+      onChange={(e) => handleInputChange("image", e.target.value)}
     />
 
     <ParallelogramInput
       label="Website"
       placeholder="https://university.edu"
-      value={formData.website}
+      value={formData.website || ""}
       onChange={(e) => handleInputChange("website", e.target.value)}
     />
 
     <ParallelogramInput
       label="Email"
       placeholder="info@university.edu"
-      value={formData.email}
+      value={formData.email || ""}
       onChange={(e) => handleInputChange("email", e.target.value)}
     />
 
     <ParallelogramInput
       label="Phone Number"
       placeholder="+20 123 456 789"
-      value={formData.phoneNumber}
+      value={formData.phoneNumber || ""}
       onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
     />
 
@@ -493,36 +522,57 @@ const UniversityModal: React.FC<UniversityModalProps> = ({
     <ParallelogramInput
       label="Total Students"
       type="number"
-      value={formData.totalStudents}
+      value={formData.totalStudents || 0}
       onChange={(e) => handleInputChange("totalStudents", Number(e.target.value))}
     />
 
     <ParallelogramInput
-      label="Total Graduates"
+      label="Undergraduate Students"
       type="number"
-      value={formData.totalGraduates}
-      onChange={(e) => handleInputChange("totalGraduates", Number(e.target.value))}
+      value={formData.ugStudents || 0}
+      onChange={(e) => handleInputChange("ugStudents", Number(e.target.value))}
     />
 
     <ParallelogramInput
-      label="Total Programs"
+      label="Postgraduate Students"
       type="number"
-      value={formData.totalPrograms}
-      onChange={(e) => handleInputChange("totalPrograms", Number(e.target.value))}
+      value={formData.pgStudents || 0}
+      onChange={(e) => handleInputChange("pgStudents", Number(e.target.value))}
     />
 
     <ParallelogramInput
       label="Total Staff"
       type="number"
-      value={formData.totalStaff}
-      onChange={(e) => handleInputChange("totalStaff", Number(e.target.value))}
+      value={formData.staff || 0}
+      onChange={(e) => handleInputChange("staff", Number(e.target.value))}
     />
 
     <ParallelogramInput
       label="Total Doctors"
       type="number"
-      value={formData.totalDoctors}
+      value={formData.totalDoctors || 0}
       onChange={(e) => handleInputChange("totalDoctors", Number(e.target.value))}
+    />
+
+    <ParallelogramInput
+      label="QS World Ranking"
+      type="number"
+      value={formData.qsWorldRanking || ""}
+      onChange={(e) => handleInputChange("qsWorldRanking", e.target.value ? Number(e.target.value) : undefined)}
+    />
+
+    <ParallelogramInput
+      label="QS Ranking By Subject"
+      type="number"
+      value={formData.qsRankingBySubject || ""}
+      onChange={(e) => handleInputChange("qsRankingBySubject", e.target.value ? Number(e.target.value) : undefined)}
+    />
+
+    <ParallelogramInput
+      label="QS Sustainability Ranking"
+      type="number"
+      value={formData.qsSustainabilityRanking || ""}
+      onChange={(e) => handleInputChange("qsSustainabilityRanking", e.target.value ? Number(e.target.value) : undefined)}
     />
   </div>
 

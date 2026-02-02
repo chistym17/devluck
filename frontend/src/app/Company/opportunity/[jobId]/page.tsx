@@ -368,21 +368,33 @@ const ContractRow = ({ applicant, onMainClick, onSideClick, showCheckbox = false
         {/* Applicant Info */}
         <div className="flex-1 flex items-center skew-x-[12deg] h-full px-4 gap-6">
           {/* Student ID */}
-          <div className="flex flex-col justify-center w-[140px]">
+          <div className="flex flex-col justify-center w-[120px]">
             <span className="text-sm font-semibold text-gray-900">{applicant.truncatedId || applicant.applicantId?.slice(-3) || "N/A"}</span>
             <span className="text-xs text-gray-400">Applicant ID</span>
           </div>
           {/* Name */}
-          <div className="flex flex-col justify-center w-[140px]">
+          <div className="flex flex-col justify-center w-[120px]">
             <span className="text-sm font-semibold text-gray-900">{applicant.name}</span>
             <span className="text-xs text-gray-400">Applicant Name</span>
           </div>
           {/* Applied Date */}
-          <div className="flex flex-col justify-center w-[140px]">
+          <div className="flex flex-col justify-center w-[80px]">
             <span className="text-sm font-semibold text-gray-900">
               {applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleDateString() : "N/A"}
             </span>
             <span className="text-xs text-gray-400">Applied Date</span>
+          </div>
+          {/* Email */}
+          <div className="flex flex-col justify-center w-[200px] ml-2">
+            <span className="text-sm font-semibold text-gray-900">{(applicant as any).email || "N/A"}</span>
+            <span className="text-xs text-gray-400">Email</span>
+          </div>
+          {/* Salary Expectation */}
+          <div className="flex flex-col justify-center w-[100px] ml-2">
+            <span className="text-sm font-semibold text-gray-900">
+              {(applicant as any).salaryExpectation ? (applicant as any).salaryExpectation.toLocaleString() : "N/A"}
+            </span>
+            <span className="text-xs text-gray-400">Salary Expectation</span>
           </div>
           {/* Application Status */}
           <div className="flex flex-col justify-center items-center w-[140px]">
@@ -398,18 +410,6 @@ const ContractRow = ({ applicant, onMainClick, onSideClick, showCheckbox = false
               {applicant.status ? applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1) : "N/A"}
             </div>
             <span className="text-xs text-gray-400">Status</span>
-          </div>
-          {/* Email */}
-          <div className="flex flex-col justify-center w-[140px] ml-2">
-            <span className="text-sm font-semibold text-gray-900">{(applicant as any).email || "N/A"}</span>
-            <span className="text-xs text-gray-400">Email</span>
-          </div>
-          {/* Salary Expectation */}
-          <div className="flex flex-col justify-center w-[140px] ml-2">
-            <span className="text-sm font-semibold text-gray-900">
-              {(applicant as any).salaryExpectation ? (applicant as any).salaryExpectation.toLocaleString() : "N/A"}
-            </span>
-            <span className="text-xs text-gray-400">Salary Expectation</span>
           </div>
         </div>
       </div>
@@ -773,7 +773,7 @@ const goToNext = () => {
 
 
         {/* Tabs */}
-         <div className="flex gap-4 mb-6 mt-4">
+         <div className="flex gap-4 mb-6 mt-4 sm:mt-0">
           {/* Description Tab */}
           <button
             onClick={() => setActiveTab("description")}
@@ -812,9 +812,11 @@ const goToNext = () => {
 
            <button
             onClick={() => router.push(`/Company/opportunity/${jobId}/add-questions`)}
-            className="px-4 py-2 bg-[#FFEB9C] rounded-lg font-bold hover:bg-[#FFE066] transition"
+            className="px-4 py-2 bg-[#FFEB9C] rounded-lg font-bold hover:bg-[#FFE066] transition duration-200 hover:bg-[#FFE066] hover:scale-105 skew-x-[-12deg]"
           >
+            <span className=" flex items-center justify-center skew-x-[12deg]">
             Add Questions
+            </span>
           </button>
 
         </div>

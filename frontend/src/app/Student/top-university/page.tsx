@@ -5,12 +5,13 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import DashboardLayout from "@/src/components/Student/DashboardLayout";
 
 import { mockUniversities } from "@/src/mocks/mockUniversities";
+import { useUniversityHandler, University } from "@/src/hooks/companyapihandler/useUniversityHandler";
 
 const UniversityCard = ({
   university,
   onClick,
 }: {
-  university: typeof mockUniversities[0];
+  university: University;
   onClick?: () => void;
 }) => {
   return (
@@ -250,7 +251,7 @@ const UniversityCard = ({
             </div>
             {/* Address Label */}
             <span className="text-[14px] leading-[22px] text-[#1E1E1E]">
-              {university.address}
+              {university.address || "N/A"}
             </span>
           </div>
 
@@ -265,7 +266,7 @@ const UniversityCard = ({
             </div>
             {/* Phone Label */}
             <span className="text-[14px] leading-[22px] text-[#1E1E1E]">
-              {university.phoneNumber}
+              {university.phoneNumber || "N/A"}
             </span>
           </div>
         </div>
@@ -288,8 +289,8 @@ const UniversityCard = ({
         {/* Description */}
         <p className="text-[16px] leading-[24px] text-black">
           <span>
-            {university.description.split(" ").slice(0, 14).join(" ")}
-            {university.description.split(" ").length > 14 ? "..." : ""}
+            {university.description ? university.description.split(" ").slice(0, 14).join(" ") : "No description available"}
+            {university.description && university.description.split(" ").length > 14 ? "..." : ""}
           </span>
 
         </p>
@@ -325,7 +326,7 @@ const UniversityCard = ({
           </div>
           {/* Text */}
           <span className="font-bold text-[14px] skew-x-[12deg] leading-[24px] text-[#1E1E1E]">
-            # {university.id}
+            # {university.id.slice(-3)}
           </span>
         </div>
       </div>
@@ -343,7 +344,7 @@ const UniversityCard = ({
 };
 
 type UniversityRowProps = {
-  university: typeof mockUniversities[0];
+  university: University;
   onMainClick?: () => void;
   onSideClick?: () => void;
   showCheckbox?: boolean;
@@ -417,7 +418,7 @@ const UniversityRow = ({ university,onMainClick,onSideClick,showCheckbox = false
         <div className="flex-1 flex items-center skew-x-[12deg] h-full px-4 gap-6">
           {/* CO-ID */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">UN-ID-{university.id}</span>
+            <span className="text-sm font-semibold text-gray-900">UN-ID-{university.id.slice(-3)}</span>
             <span className="text-xs text-gray-400">university ID</span>
           </div>
           {/* Name */}
@@ -427,17 +428,17 @@ const UniversityRow = ({ university,onMainClick,onSideClick,showCheckbox = false
           </div>
           {/* Contract Title */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{university.phoneNumber}</span>
+            <span className="text-sm font-semibold text-gray-900">{university.phoneNumber || "N/A"}</span>
             <span className="text-xs text-gray-400">Phone Number</span>
           </div>
           {/* Start Date */}
           <div className="flex flex-col justify-center w-[240px]">
-            <span className="text-sm font-semibold text-gray-900">{university.address}</span>
+            <span className="text-sm font-semibold text-gray-900">{university.address || "N/A"}</span>
             <span className="text-xs text-gray-400">Address</span>
           </div>
           {/* End Date */}
           <div className="flex flex-col justify-center w-[80px]">
-            <span className="text-sm font-semibold text-gray-900">{university.qsWorldRanking}</span>
+            <span className="text-sm font-semibold text-gray-900">{university.qsWorldRanking || "N/A"}</span>
             <span className="text-xs text-gray-400">World Ranking</span>
           </div>
 
@@ -461,67 +462,69 @@ const UniversityRow = ({ university,onMainClick,onSideClick,showCheckbox = false
 
 
 export default function TopUniversityPage() {
+  const router = useRouter();
+  const {
+    universities,
+    loading,
+    error,
+    getUniversities,
+  } = useUniversityHandler();
 
-    //---------------------filter----------------------------------
-        const [showUniversities, setShowUniversities] = useState(true);
-        const router = useRouter();
-        const [searchQuery, setSearchQuery] = useState("");
-        const [currentPage, setCurrentPage] = useState(1);
+  const [showUniversities, setShowUniversities] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [totalPages, setTotalPages] = useState(1);
 
-    
-        // 🔍 Filter applicants
-        const filteredUniversities = useMemo(() => {
-          return mockUniversities.filter(applicant => {
-            // Search filter
-            const searchMatch =
-              !searchQuery.trim() ||
-              applicant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              applicant.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              applicant.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              applicant.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              applicant.id.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      if (window.innerWidth < 640) {
+        setItemsPerPage(4);
+      } else {
+        setItemsPerPage(6);
+      }
+    };
 
-            return searchMatch;
-          });
-        }, [searchQuery]);
-    
-    
-        
-        // 📄 Pagination
-        const [itemsPerPage, setItemsPerPage] = useState(6); // default 6 for desktop
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
+  }, []);
 
-        useEffect(() => {
-          const updateItemsPerPage = () => {
-            if (window.innerWidth < 640) { // mobile
-              setItemsPerPage(4);
-            } else {
-              setItemsPerPage(6); // desktop
-            }
-          };
+  useEffect(() => {
+    const fetchUniversities = async () => {
+      try {
+        const response = await getUniversities(currentPage, itemsPerPage, searchQuery, 'name');
+        setTotalPages(response.totalPages);
+      } catch (err) {
+        console.error('Failed to fetch universities:', err);
+      }
+    };
+    fetchUniversities();
+  }, [currentPage, itemsPerPage, searchQuery, getUniversities]);
 
-          updateItemsPerPage(); // run once on mount
-          window.addEventListener("resize", updateItemsPerPage); // run on resize
+  const paginatedUniversities = universities;
 
-          return () => window.removeEventListener("resize", updateItemsPerPage);
-        }, []);
-        const totalPages = Math.ceil(filteredUniversities.length / itemsPerPage);
-        
-        const paginatedUniversities = filteredUniversities.slice(
-          (currentPage - 1) * itemsPerPage,
-          currentPage * itemsPerPage
-        );
-        
-        const goToPage = (page: number) => {
-          if (page >= 1 && page <= totalPages) setCurrentPage(page);
-        };
-        
-        const goToPrevious = () => {
-          if (currentPage > 1) setCurrentPage(prev => prev - 1);
-        };
-        
-        const goToNext = () => {
-          if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
-        };
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  const goToPrevious = () => {
+    if (currentPage > 1) setCurrentPage(prev => prev - 1);
+  };
+
+  const goToNext = () => {
+    if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+  };
+
+  if (loading && universities.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-screen items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
+        </div>
+      </DashboardLayout>
+    );
+  }
   return (
       <DashboardLayout>
       <div className="px-4 sm:px-6 lg:px-8 py-6">

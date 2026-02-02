@@ -15,7 +15,7 @@ interface CorporateModalProps {
   onClose: () => void;
   onSave: (data: CorporateData) => void;
 }
-
+ 
 // Parallelogram Input Component
 const ParallelogramInput = ({
   label,

@@ -7,6 +7,7 @@ import OpportunityModal from "@/src/components/Company/OpportunityModal";
 import { useRouter } from "next/navigation";
 import { useOpportunityHandler } from "@/src/hooks/companyapihandler/useOpportunityHandler";
 import { createPortal } from "react-dom";
+import { Toast } from "@/src/components/common/Toast";
 
 /* ──────────────────────────────────────────────
    Card Component
@@ -538,6 +539,11 @@ const ContractRow = ({ job, onMainClick, onEdit, onDelete, showCheckbox = false 
    Main Opportunity Page Component
 ────────────────────────────────────────────── */
 export default function OpportunityPage() {
+
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [opportunityToDelete, setopportunityToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -1003,11 +1009,19 @@ export default function OpportunityPage() {
               try {
                 await deleteOpportunity(opportunityToDelete);
                 await listOpportunities(1, 1000); // refresh list
+
+                setToastMessage("Opportunity deleted successfully");
+                setToastType("success");
+                setToastVisible(true);
+
                 setDeleteConfirmOpen(false);
                 setopportunityToDelete(null);
               } catch (error) {
                 console.error("Failed to delete opportunity:", error);
-                alert("Failed to delete opportunity. Please try again.");
+                
+                setToastMessage("Failed to delete opportunity. Please try again.");
+                setToastType("error");
+                setToastVisible(true);
               } finally {
                 setDeleting(false);
               }
@@ -1022,6 +1036,13 @@ export default function OpportunityPage() {
     </div>
   </div>
 )}
+<Toast
+  isVisible={toastVisible}
+  message={toastMessage}
+  type={toastType}
+  onClose={() => setToastVisible(false)}
+/>
+
     </DashboardLayout>
   );
 }

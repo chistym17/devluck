@@ -2,9 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { DayPicker } from "react-day-picker";
-import { format } from "date-fns";
-import "react-day-picker/dist/style.css";
+
 
 // Types
 interface ContractData {
@@ -120,92 +118,6 @@ const ParallelogramSelect = ({
             </div>
           ))}
 
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Parallelogram DatePicker Component
-const ParallelogramDatePicker = ({
-  label,
-  placeholder,
-  value,
-  onChange,
-}: {
-  label: string;
-  placeholder: string;
-  value?: string;
-  onChange: (value: string) => void;
-}) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative w-full h-[48px]">
-      {/* Label */}
-      <label className="absolute -top-2 left-5 h-[18px] px-3 bg-[#FFEB9C] text-xs text-[#1E1E1E] flex items-center skew-x-[-12deg] z-30 rounded-md">
-        <span className="skew-x-[12deg]">{label}</span>
-      </label>
-
-      {/* Field */}
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="relative w-full h-full"
-      >
-        <div
-          className="h-full w-full border border-[#1C252E] rounded-[12px]"
-          style={{ transform: "skewX(-15deg)" }}
-        >
-          <div
-            className="h-full flex items-center px-5"
-            style={{ transform: "skewX(15deg)" }}
-          >
-            <span
-              className={`text-[14px] ${value ? "text-[#171717cc]" : "text-[#17171780]"
-                }`}
-            >
-              {value || placeholder}
-            </span>
-          </div>
-        </div>
-      </button>
-
-      {/* Calendar */}
-      {open && (
-        <div
-          className="absolute z-50"
-          style={{
-            top: "-230px", // move slightly higher
-            left: "50%",   // center horizontally relative to the input
-            transform: "translateX(-50%)", // center and keep parallelogram skew
-            minWidth: "250px", // normal width
-            maxWidth: "350px",
-          }}
-        >
-          <div className="bg-white border rounded-[12px] p-3 shadow-lg">
-            <DayPicker
-              mode="single"
-              selected={value ? new Date(value) : undefined}
-              onSelect={(date) => {
-                if (date) {
-                  onChange(format(date, "yyyy-MM-dd"));
-                  setOpen(false);
-                }
-              }}
-            />
-          </div>
         </div>
       )}
     </div>
@@ -380,9 +292,10 @@ const ContractModal: React.FC<ContractModalProps> = ({
 
         {/* Form - scrollable */}
         <form
-          className="flex-1 flex flex-col gap-4 p-4  bg-white "
+          className="flex-1 flex flex-col gap-4 p-4  bg-white overflow-y-auto "
           onSubmit={handleSubmit}
         >
+          <div className="flex flex-col gap-4">
           <ParallelogramInput
             label="Template Name"
             placeholder="Enter template name"
@@ -394,13 +307,6 @@ const ContractModal: React.FC<ContractModalProps> = ({
             placeholder="Enter contract title"
             value={formData.contractTitle}
             onChange={(e) => handleInputChange("contractTitle", e.target.value)}
-          />
-          <ParallelogramSelect
-            label="Currency"
-            placeholder="Select currency"
-            value={formData.currency}
-            options={["USD", "EUR", "GBP", "SAR", "AED"]}
-            onChange={(val) => handleInputChange("currency", val)}
           />
           <ParallelogramSelect
             label="Duration"
@@ -430,6 +336,13 @@ const ContractModal: React.FC<ContractModalProps> = ({
             onChange={(e) => handleInputChange("monthlyAllowance", e.target.value)}
           />
           <ParallelogramSelect
+            label="Currency"
+            placeholder="Select currency"
+            value={formData.currency}
+            options={["USD", "EUR", "GBP", "SAR", "AED"]}
+            onChange={(val) => handleInputChange("currency", val)}
+          />
+          <ParallelogramSelect
             label="Status"
             placeholder="Select status"
             value={formData.status}
@@ -438,6 +351,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
               handleInputChange("status", val as ContractData["status"])
             }
           />
+          </div>
 
         </form>
 

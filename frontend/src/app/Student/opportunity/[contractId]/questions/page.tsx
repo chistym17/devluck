@@ -123,7 +123,7 @@ export default function ContractQuestionsPage() {
   if (questionsLoading) {
     return (
       <DashboardLayout>
-        <div className="px-6 py-6 min-h-[calc(100vh-120px)] flex items-center justify-center">
+       <div className="flex h-screen items-center justify-center">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
         </div>
       </DashboardLayout>
@@ -192,12 +192,42 @@ export default function ContractQuestionsPage() {
                     value={answers[q.id] || ""}
                     onChange={(e) => handleChange(q.id, e.target.value)}
                     placeholder="Your answer..."
-                    className="absolute top-0 left-0 w-full h-full bg-transparent outline-none px-5 pt-4 pb-2 text-[14px] text-[#171717cc] resize-none"
+                    className="absolute top-0 left-0 w-full h-full bg-transparent outline-none px-5 pt-4 pb-2 text-[14px] text-[#171717cc] resize-none skew-x-[12deg]"
                     />  
 
                   </div>
                 )}
 
+      {q.type === "select" && q.options && q.options.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {q.options.map((opt) => {
+            const selected = answers[q.id] === opt;
+
+            return (
+              <div
+                key={opt}
+                onClick={() => handleChange(q.id, opt)}
+                className="flex items-center gap-3 cursor-pointer select-none"
+              >
+                <div className="w-9 h-9 flex items-center justify-center">
+                  {selected ? (
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                      <circle cx="18" cy="18" r="16" fill="#FFEB9C" stroke="#1E1E1E" strokeWidth="2"/>
+                      <circle cx="18" cy="18" r="8" fill="#1E1E1E"/>
+                    </svg>
+                  ) : (
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                      <circle cx="18" cy="18" r="16" fill="white" stroke="#637381" strokeWidth="2"/>
+                    </svg>
+                  )}
+                </div>
+
+                <span className="text-sm font-medium">{opt}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {q.type === "checkbox" && q.options && q.options.length > 0 && (
   <div className="flex flex-col gap-3">

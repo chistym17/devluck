@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useSidebar } from "@/src/lib/sidebarContext";
-import { mockNotifications, type Notification } from "@/src/mocks/notifications.mock";
+import { useUnreadNotifications } from "@/src/hooks/companyapihandler/useUnreadNotifications";
+
 
 const LeftSidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobileOpen: (open: boolean) => void }) => {
   const pathname = usePathname();
@@ -16,8 +17,7 @@ const LeftSidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMo
   const glowLeftRef = useRef<HTMLDivElement>(null);
 
   // Calculate unread notifications
-  const unreadCount = mockNotifications.filter(n => !n.read).length;
-  const unreadLabel = unreadCount > 9 ? "9+" : unreadCount.toString();
+  const { unreadLabel, unreadCount } = useUnreadNotifications()
 
   // Detect mobile screen
   useEffect(() => {

@@ -4,12 +4,50 @@ import DashboardLayout from "@/src/components/Student/DashboardLayout";
 import { mockUniversities } from "@/src/mocks/mockUniversities";
 import { useSidebar } from "@/src/lib/sidebarContext";
 import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useUniversityHandler } from "@/src/hooks/companyapihandler/useUniversityHandler";
 
 export default function TopUniversityPage() {
-    const { isCollapsed } = useSidebar(); // ✅ get collapse state
+    const { isCollapsed } = useSidebar();
     const params = useParams(); 
-    const {universityId } = params;
-    const university = mockUniversities.find(a => a.id === universityId);
+    const { universityId } = params;
+    const { university, loading, error, getUniversityById } = useUniversityHandler();
+
+    useEffect(() => {
+      if (universityId && typeof universityId === 'string') {
+        getUniversityById(universityId).catch((err) => {
+          console.error('Failed to load university details:', err);
+        });
+      }
+    }, [universityId, getUniversityById]);
+
+    if (loading) {
+      return (
+        <DashboardLayout>
+          <div className="flex h-screen items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
+          </div>
+        </DashboardLayout>
+      );
+    }
+
+    if (error || !university) {
+      return (
+        <DashboardLayout>
+          <div className="flex h-screen items-center justify-center">
+            <div className="text-center">
+              <p className="text-red-500 mb-4">{error || 'University not found'}</p>
+              <button
+                onClick={() => window.history.back()}
+                className="px-4 py-2 bg-black text-white rounded-md"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </DashboardLayout>
+      );
+    }
   
   return (
     <DashboardLayout>

@@ -610,6 +610,31 @@ export default function TopCompanyPage() {
           0
         );
 
+        if (loading && topCompanies.length === 0) {
+            return (
+              <DashboardLayout>
+                <div className="flex h-screen items-center justify-center">
+                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
+                </div>
+              </DashboardLayout>
+            );
+          }
+        
+          if (error && topCompanies.length === 0) {
+            return (
+              <DashboardLayout>
+                <div className="px-4 sm:px-6 lg:px-8 py-6">
+                  <h1 className="text-[28px] font-bold text-[#1E1E1E] mb-8">
+                    Company
+                  </h1>
+                  <div className="flex justify-center py-10 text-red-500">
+                    Error: {error}
+                  </div>
+                </div>
+              </DashboardLayout>
+            );
+          }
+
    return (
        <DashboardLayout>
        <div className="px-4 sm:px-6 lg:px-8 py-6">
