@@ -2,7 +2,6 @@
 
 import DashboardLayout from "@/src/components/Company/DashboardLayout";
 import { useSidebar } from "@/src/lib/sidebarContext";
-import { useRouter, useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import CorporateModal from "@/src/components/Company/CorporateModal";
 import AddressModal from "@/src/components/Company/AddressModal";
@@ -10,8 +9,10 @@ import ProgramsModal from "@/src/components/Company/ProgramsModal";
 import { useCompanyProfileHandler } from "@/src/hooks/companyapihandler/useCompanyProfileHandler";
 import { useProgramHandler } from "@/src/hooks/companyapihandler/useProgramHandler";
 import { useReviewHandler } from "@/src/hooks/companyapihandler/useReviewHandler";
+import { useDocumentHandler } from "@/src/hooks/companyapihandler/useDocumentHandler";
 import { api } from "@/src/lib/api";
 import { Toast } from "@/src/components/common/Toast";
+import { useRouter } from "next/navigation";
 
 
 interface ClipImageProps {
@@ -21,7 +22,25 @@ interface ClipImageProps {
 }
 
 const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
     const hasImage = !!src;
+
+    useEffect(() => {
+        if (src) {
+            setImageLoaded(false);
+            setImageError(false);
+
+            const img = new Image();
+            img.onload = () => {
+                setImageLoaded(true);
+            };
+            img.onerror = () => {
+                setImageError(true);
+            };
+            img.src = src;
+        }
+    }, [src]);
 
     return (
         <svg
@@ -29,31 +48,27 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
             height={height}
             viewBox={`0 0 ${width} ${height}`}
             xmlns="http://www.w3.org/2000/svg"
-            style={{ background: "transparent" }} // transparent background
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            style={{ background: "transparent" }}
         >
             <defs>
-                <mask
-                    id="mask0"
-                    maskUnits="userSpaceOnUse"
-                    x={0}
-                    y={0}
-                    width={width}
-                    height={height}
-                    style={{ maskType: "alpha" }}
-                >
-                    <path d="M222.5 0.5L155 0H83.5L70 13L26.5 26H0V35.5V240.55C32.3519 259.391 69.9679 270.183 110.104 270.183C157.941 270.183 202.32 256.216 238.5 231.85V105V98.5H234H229H222.5V94V0.5Z" fill="white" />
-                </mask>
+                <clipPath id={`clip-${width}-${height}`}>
+                    <path d="M222.5 0.5L155 0H83.5L70 13L26.5 26H0V35.5V240.55C32.3519 259.391 69.9679 270.183 110.104 270.183C157.941 270.183 202.32 256.216 238.5 231.85V105V98.5H234H229H222.5V94V0.5Z" />
+                </clipPath>
             </defs>
 
-            {hasImage ? (
-                <g mask="url(#mask0)">
-                    <image
-                        href={src}
-                        width={width}
-                        height={height}
-                        preserveAspectRatio="xMidYMid slice"
-                    />
-                </g>
+            {hasImage && !imageError ? (
+                <image
+                    href={src}
+                    xlinkHref={src}
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    preserveAspectRatio="xMidYMid slice"
+                    clipPath={`url(#clip-${width}-${height})`}
+                    crossOrigin="anonymous"
+                />
             ) : (
                 <text
                     x="50%"
@@ -64,7 +79,7 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
                     fontSize="16"
                     fontFamily="sans-serif"
                 >
-                    No image found
+                    {imageError ? 'Failed to load' : 'No image'}
                 </text>
             )}
         </svg>
@@ -73,10 +88,13 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
 
 
 type EmployeeApplicant = {
+    applicantId: string;
+    contractTitle?: string;
+    contractStatus?: string;
+    contractNumber?: string;
     student: {
         id: string;
         name: string | null;
-        profileComplete?: number | null;
         image?: string | null;
     };
 };
@@ -88,6 +106,14 @@ const ApplicantCard = ({
     applicant: EmployeeApplicant;
     onClick?: () => void;
 }) => {
+    const router = useRouter();
+
+    const handleNavigate = () => {
+        if (applicant.student?.id) {
+            router.push(`/Company/applicant/${applicant.student.id}`);
+        }
+    };
+
     return (
         <div className="relative w-[268px] h-[462px]">
             {/* SVG Card Body */}
@@ -463,11 +489,12 @@ const ApplicantCard = ({
                 style={{
                     left: "23px",
                     top: "100px",
-
+                    width: "239px",
+                    height: "271px",
                 }}
             >
                 <ClipImage
-                    src={applicant.student?.image || "/avatars/nina.jpeg"}
+                    src={applicant.student?.image as string | undefined}
                     width={239}
                     height={271}
                 />
@@ -479,10 +506,13 @@ const ApplicantCard = ({
                 style={{
                     left: "87px",
                     top: "311px",
-                    zIndex: 2, // higher layer
-
+                    zIndex: 2,
+                    cursor: "pointer",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
                 }}
-                onClick={onClick}
+                onClick={handleNavigate}
             >
                 <svg width="99" height="99" viewBox="0 0 99 99" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="48.757" cy="42.9762" r="31.4049" fill="black" />
@@ -695,57 +725,40 @@ const ApplicantCard = ({
                 {/* First Name */}
                 <div
                     style={{
-
-                        fontSize: "20px",
-                        lineHeight: "30px",
-                        fontWeight: 400,
+                        fontSize: "16px",
+                        lineHeight: "20px",
+                        fontWeight: 600,
                         color: "#1E1E1E",
                         textAlign: "center",
-                        marginBottom: "-8px",
+                        marginBottom: "4px",
                     }}
                 >
-                {applicant.student?.name || ""}
+                    {applicant.student?.name || "Employee"}
                 </div>
 
-                {/* Last Name */}
                 <div
                     style={{
-
                         fontSize: "12px",
                         lineHeight: "16px",
-                        fontWeight: 400,
-                        color: "rgba(0, 0, 0, 0.64)",
+                        fontWeight: 500,
+                        color: "#637381",
                         textAlign: "center",
                     }}
                 >
-                {applicant.student?.name || ""}
+                    {applicant.contractTitle || "No Contract Title"}
                 </div>
             </div>
 
-            {/* user profile-complete */}
-            <div
-                style={{
-                    position: "absolute",
-                    top: " 40px",
-                    left: "44px",
-                    fontStyle: "normal",
-                    fontWeight: 700,
-                    fontSize: "20px",
-                    lineHeight: "36px",
-                    display: "flex",
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    color: 'rgba(23, 23, 23, 0.48)',
-                }}
-            >
-                {applicant.student?.profileComplete ?? 0}%
-            </div>
         </div>
     );
 };
 
 type UploadItem = {
-    file: File;
+    id?: string;
+    file?: File;
+    fileName?: string;
+    fileUrl?: string;
+    fileType?: string;
     preview?: string;
     progress: number;
     uploading: boolean;
@@ -759,10 +772,11 @@ export default function TopCompanyPage() {
     // ✅ Fixed company ID
     const companyId = "C001";
 
-    const { profile, getProfile, updateProfile, uploadLogo, uploadLogoLoading, uploadLogoError, employees, getEmployees } = useCompanyProfileHandler();
+    const { profile, getProfile, updateProfile, uploadLogo, uploadLogoLoading, uploadLogoError, employees, employeesLoading, getEmployees } = useCompanyProfileHandler();
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const { programs, getPrograms } = useProgramHandler();
     const { reviews: companyReviews, getReviews } = useReviewHandler();
+    const { documents, getDocuments, uploadDocument, deleteDocument } = useDocumentHandler();
     const company = profile as any;
 
     useEffect(() => {
@@ -770,61 +784,95 @@ export default function TopCompanyPage() {
         getPrograms();
         getEmployees();
         getReviews();
-    }, [getProfile, getPrograms, getEmployees, getReviews]);
+        getDocuments();
+    }, [getProfile, getPrograms, getEmployees, getReviews, getDocuments]);
 
 
-    // ============= file upload==============
+    // ============= file upload (Section 1) ==============
     const [files, setFiles] = useState<UploadItem[]>([]);
     const [dragging, setDragging] = useState(false);
+    const uploadingFiles = useRef<Set<string>>(new Set());
+    const [deletingFiles, setDeletingFiles] = useState<Set<number>>(new Set());
+    const [clearingAll, setClearingAll] = useState(false);
 
-    /* -----------------------------
-        FAKE UPLOAD (SIMULATION)
-    ------------------------------ */
-    const simulateUpload = (index: number) => {
-        setFiles((prev) =>
-            prev.map((f, i) =>
-                i === index ? { ...f, uploading: true, error: undefined } : f
-            )
-        );
+    // ============= file upload (Section 2) ==============
+    const [files2, setFiles2] = useState<UploadItem[]>([]);
+    const [dragging2, setDragging2] = useState(false);
+    const uploadingFiles2 = useRef<Set<string>>(new Set());
+    const [deletingFiles2, setDeletingFiles2] = useState<Set<number>>(new Set());
+    const [clearingAll2, setClearingAll2] = useState(false);
 
-        let progress = 0;
+    useEffect(() => {
+        if (documents) {
+            const mappedFiles: UploadItem[] = documents.map((doc) => ({
+                id: doc.id,
+                fileName: doc.fileName,
+                fileUrl: doc.fileUrl,
+                fileType: doc.fileType,
+                preview: doc.fileType.startsWith('image/') ? doc.fileUrl : undefined,
+                progress: 100,
+                uploading: false
+            }));
+            setFiles(mappedFiles);
+            setFiles2(mappedFiles);
+        }
+    }, [documents]);
 
-        const interval = setInterval(() => {
-            progress += 10;
+    const uploadFile = async (file: File, index: number) => {
+        const fileKey = `${file.name}-${file.size}-${file.lastModified}`;
+        if (uploadingFiles.current.has(fileKey)) {
+            return;
+        }
 
+        uploadingFiles.current.add(fileKey);
+        try {
             setFiles((prev) =>
                 prev.map((f, i) =>
-                    i === index ? { ...f, progress } : f
+                    i === index ? { ...f, uploading: true, error: undefined } : f
                 )
             );
 
-            if (progress >= 100) {
-                clearInterval(interval);
-
-                // simulate random failure
-                const failed = Math.random() < 0.2;
-
+            const document = await uploadDocument(file, (progress) => {
                 setFiles((prev) =>
                     prev.map((f, i) =>
-                        i === index
-                            ? failed
-                                ? {
-                                    ...f,
-                                    uploading: false,
-                                    progress: 0,
-                                    error: "Upload failed. Retry.",
-                                }
-                                : { ...f, uploading: false, progress: 100 }
-                            : f
+                        i === index ? { ...f, progress } : f
                     )
                 );
-            }
-        }, 300);
+            });
+
+            setFiles((prev) =>
+                prev.map((f, i) =>
+                    i === index
+                        ? {
+                            id: document.id,
+                            fileName: document.fileName,
+                            fileUrl: document.fileUrl,
+                            fileType: document.fileType,
+                            preview: document.fileType.startsWith('image/') ? document.fileUrl : undefined,
+                            progress: 100,
+                            uploading: false
+                        }
+                        : f
+                )
+            );
+        } catch (error) {
+            setFiles((prev) =>
+                prev.map((f, i) =>
+                    i === index
+                        ? {
+                            ...f,
+                            uploading: false,
+                            progress: 0,
+                            error: "Upload failed. Retry."
+                        }
+                        : f
+                )
+            );
+        } finally {
+            uploadingFiles.current.delete(fileKey);
+        }
     };
 
-    /* -----------------------------
-        FILE HANDLER
-    ------------------------------ */
     const handleFiles = (incoming: File[]) => {
         if (files.length + incoming.length > MAX_FILES) {
             alert(`Max ${MAX_FILES} files allowed`);
@@ -856,18 +904,168 @@ export default function TopCompanyPage() {
 
             setFiles((prev) => {
                 const index = prev.length;
-                setTimeout(() => simulateUpload(index), 100);
+                setTimeout(() => uploadFile(file, index), 100);
                 return [...prev, item];
             });
         });
     };
 
-    const removeFile = (index: number) => {
+    const removeFile = async (index: number) => {
+        const fileItem = files[index];
+        setDeletingFiles(prev => new Set(prev).add(index));
+
+        if (fileItem.id) {
+            try {
+                await deleteDocument(fileItem.id);
+            } catch (error) {
+            }
+        }
+
         setFiles((prev) => prev.filter((_, i) => i !== index));
+        setDeletingFiles(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(index);
+            return newSet;
+        });
     };
 
-    const clearAll = () => {
+    const clearAll = async () => {
+        setClearingAll(true);
+        for (const file of files) {
+            if (file.id) {
+                try {
+                    await deleteDocument(file.id);
+                } catch (error) {
+                }
+            }
+        }
         setFiles([]);
+        setClearingAll(false);
+    };
+
+    const uploadFile2 = async (file: File, index: number) => {
+        const fileKey = `${file.name}-${file.size}-${file.lastModified}`;
+        if (uploadingFiles2.current.has(fileKey)) {
+            return;
+        }
+
+        uploadingFiles2.current.add(fileKey);
+        try {
+            setFiles2((prev) =>
+                prev.map((f, i) =>
+                    i === index ? { ...f, uploading: true, error: undefined } : f
+                )
+            );
+
+            const document = await uploadDocument(file, (progress) => {
+                setFiles2((prev) =>
+                    prev.map((f, i) =>
+                        i === index ? { ...f, progress } : f
+                    )
+                );
+            });
+
+            setFiles2((prev) =>
+                prev.map((f, i) =>
+                    i === index
+                        ? {
+                            id: document.id,
+                            fileName: document.fileName,
+                            fileUrl: document.fileUrl,
+                            fileType: document.fileType,
+                            preview: document.fileType.startsWith('image/') ? document.fileUrl : undefined,
+                            progress: 100,
+                            uploading: false
+                        }
+                        : f
+                )
+            );
+        } catch (error) {
+            setFiles2((prev) =>
+                prev.map((f, i) =>
+                    i === index
+                        ? {
+                            ...f,
+                            uploading: false,
+                            progress: 0,
+                            error: "Upload failed. Retry."
+                        }
+                        : f
+                )
+            );
+        } finally {
+            uploadingFiles2.current.delete(fileKey);
+        }
+    };
+
+    const handleFiles2 = (incoming: File[]) => {
+        if (files2.length + incoming.length > MAX_FILES) {
+            alert(`Max ${MAX_FILES} files allowed`);
+            return;
+        }
+
+        incoming.forEach((file) => {
+            if (
+                !file.type.startsWith("image/") &&
+                file.type !== "application/pdf"
+            ) {
+                alert("Only images and PDFs allowed");
+                return;
+            }
+
+            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                alert(`Max file size ${MAX_FILE_SIZE_MB}MB`);
+                return;
+            }
+
+            const item: UploadItem = {
+                file,
+                preview: file.type.startsWith("image/")
+                    ? URL.createObjectURL(file)
+                    : undefined,
+                progress: 0,
+                uploading: false,
+            };
+
+            setFiles2((prev) => {
+                const index = prev.length;
+                setTimeout(() => uploadFile2(file, index), 100);
+                return [...prev, item];
+            });
+        });
+    };
+
+    const removeFile2 = async (index: number) => {
+        const fileItem = files2[index];
+        setDeletingFiles2(prev => new Set(prev).add(index));
+
+        if (fileItem.id) {
+            try {
+                await deleteDocument(fileItem.id);
+            } catch (error) {
+            }
+        }
+
+        setFiles2((prev) => prev.filter((_, i) => i !== index));
+        setDeletingFiles2(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(index);
+            return newSet;
+        });
+    };
+
+    const clearAll2 = async () => {
+        setClearingAll2(true);
+        for (const file of files2) {
+            if (file.id) {
+                try {
+                    await deleteDocument(file.id);
+                } catch (error) {
+                }
+            }
+        }
+        setFiles2([]);
+        setClearingAll2(false);
     };
 
     /* -----------------------------
@@ -910,7 +1108,6 @@ export default function TopCompanyPage() {
             await uploadLogo(file);
             setToast({ message: "Logo updated successfully", type: "success" });
         } catch (err) {
-            console.error(err);
             setToast({ message: uploadLogoError || "Failed to upload logo", type: "error" });
         }
     };
@@ -1541,49 +1738,90 @@ export default function TopCompanyPage() {
                         }}
                     >
 
-            {(employees.length > 0 ? employees : []).slice(0, 6).map((employee) => {
-                const student = employee.student;
-                const cardData: any = {
-                    applicantId: student?.id || employee.id,
-                    name: student?.name || "Employee",
-                    experience: "",
-                    education: "",
-                    language: "",
-                    portfolio: { github: "", linkedin: "" },
-                    skills: [],
-                    description: "",
-                    profileRanking: 0,
-                    profileComplete: student?.profileComplete ?? 0,
-                    status: student?.status || "",
-                    salaryPaid: "",
-                    startDate: "",
-                    endDate: "",
-                    workProgress: 0,
-                    contractStatus: employee.status,
-                    contractTitle: employee.contractTitle,
-                    paymentStatus: "",
-                    availability: "",
-                    image: student?.image || "/avatars/nina.jpeg",
-                    image1: student?.image || "/avatars/nina.jpeg",
-                    city: "R i y a d h",
-                };
-                return (
+                        {employeesLoading ? (
                             <div
-                    key={cardData.applicantId}
-                                className="flex-shrink-0" // prevents shrinking
                                 style={{
-                                    transform: "scale(0.6)", // scale down to fit container
-                                    transformOrigin: "top left",
-                                    marginRight: "-120px", // tweak this to remove extra gap
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
                                 }}
                             >
-                                <ApplicantCard
-                    applicant={cardData}
-                    onClick={() => console.log(cardData.applicantId)}
-                                />
+                                Loading employees...
                             </div>
-                );
-            })}
+                        ) : employees.length > 0 ? (
+                            employees.slice(0, 6).map((employee) => {
+                                const student = employee.student;
+                                const cardData: any = {
+                                    applicantId: student?.id || employee.id,
+                                    name: student?.name || "Employee",
+                                    experience: "",
+                                    education: "",
+                                    language: "",
+                                    portfolio: { github: "", linkedin: "" },
+                                    skills: [],
+                                    description: "",
+                                    profileRanking: 0,
+                                    profileComplete: student?.profileComplete ?? 0,
+                                    status: student?.status || "",
+                                    salaryPaid: "",
+                                    startDate: "",
+                                    endDate: "",
+                                    workProgress: 0,
+                                    contractStatus: employee.status,
+                                    contractTitle: employee.contractTitle,
+                                    paymentStatus: "",
+                                    availability: "",
+                                    image: student?.image || "/images/A11.jpeg",
+                                    image1: student?.image || "/images/A11.jpeg",
+                                    city: "R i y a d h",
+                                };
+                                return (
+                                    <div
+                                        key={cardData.applicantId}
+                                        className="flex-shrink-0"
+                                        style={{
+                                            transform: "scale(0.6)",
+                                            transformOrigin: "top left",
+                                            marginRight: "-120px",
+                                        }}
+                                    >
+                                        <ApplicantCard
+                                            applicant={{
+                                                applicantId: cardData.applicantId,
+                                                contractTitle: employee.contractTitle,
+                                                contractStatus: employee.status,
+                                                contractNumber: employee.contractNumber,
+                                                student: {
+                                                    id: student?.id || cardData.applicantId,
+                                                    name: student?.name || "Employee",
+                                                    image: student?.image,
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div
+                                style={{
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
+                                }}
+                            >
+                                No employees assigned to this company yet.
+                            </div>
+                        )}
                     </div>
 
 
@@ -1660,15 +1898,17 @@ export default function TopCompanyPage() {
                             {files.length > 0 && (
                                 <button
                                     onClick={clearAll}
+                                    disabled={clearingAll}
                                     style={{
                                         marginTop: "12px",
                                         background: "none",
                                         border: "none",
-                                        color: "#D32F2F",
-                                        cursor: "pointer",
+                                        color: clearingAll ? "#999" : "#D32F2F",
+                                        cursor: clearingAll ? "not-allowed" : "pointer",
+                                        opacity: clearingAll ? 0.6 : 1,
                                     }}
                                 >
-                                    Clear all
+                                    {clearingAll ? "Deleting..." : "Clear all"}
                                 </button>
                             )}
 
@@ -1687,7 +1927,7 @@ export default function TopCompanyPage() {
                             >
                                 {files.map((item, index) => (
                                     <div
-                                        key={index}
+                                        key={item.id || index}
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -1735,12 +1975,12 @@ export default function TopCompanyPage() {
                                         {/* Info */}
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 600 }}>
-                                                {item.file.name.length > 15
-                                                    ? item.file.name.slice(0, 15) + "..."
-                                                    : item.file.name}
+                                                {((item.file?.name || item.fileName || '').length > 15
+                                                    ? (item.file?.name || item.fileName || '').slice(0, 15) + "..."
+                                                    : (item.file?.name || item.fileName || ''))}
                                             </div>
                                             <div style={{ fontSize: "12px", color: "rgba(23,23,23,0.48)" }}>
-                                                {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                                                {item.file ? (item.file.size / 1024 / 1024).toFixed(2) : '0.00'} MB
                                             </div>
 
                                             {/* Progress */}
@@ -1774,9 +2014,9 @@ export default function TopCompanyPage() {
 
                                         {/* Actions */}
                                         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                            {item.error && (
+                                            {item.error && item.file && (
                                                 <button
-                                                    onClick={() => simulateUpload(index)}
+                                                    onClick={() => uploadFile(item.file!, index)}
                                                     style={{
                                                         border: "none",
                                                         background: "#FFAB00",
@@ -1791,16 +2031,18 @@ export default function TopCompanyPage() {
 
                                             <button
                                                 onClick={() => removeFile(index)}
+                                                disabled={deletingFiles.has(index)}
                                                 style={{
                                                     border: "none",
-                                                    background: "#D32F2F",
+                                                    background: deletingFiles.has(index) ? "#999" : "#D32F2F",
                                                     color: "#FFF",
                                                     borderRadius: "55px",
                                                     padding: "5px 10px",
-                                                    cursor: "pointer",
+                                                    cursor: deletingFiles.has(index) ? "not-allowed" : "pointer",
+                                                    opacity: deletingFiles.has(index) ? 0.6 : 1,
                                                 }}
                                             >
-                                                ✕
+                                                {deletingFiles.has(index) ? "..." : "✕"}
                                             </button>
                                         </div>
                                     </div>
@@ -1851,75 +2093,91 @@ export default function TopCompanyPage() {
                                 gap: "12px",
                             }}
                         >
-                            {companyReviews.map((review) => (
+                            {companyReviews.length === 0 ? (
                                 <div
-                                    key={review.id}
                                     style={{
-                                        padding: "12px",
-                                        borderRadius: "12px",
-
+                                        flex: 1,
                                         display: "flex",
-                                        flexDirection: "column",
-                                        gap: "6px",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#919EAB",
+                                        fontSize: "14px",
+                                        textAlign: "center",
+                                        padding: "24px",
                                     }}
                                 >
-                                    {/* Reviewer Info + Rating Stars */}
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        {/* Reviewer Info */}
-                                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                            <img
-                                                src={review.studentImage || "/avatars/nina.jpeg"}
-                                                alt={review.name}
-                                                style={{
-                                                    width: "32px",
-                                                    height: "32px",
-                                                    borderRadius: "50%",
-                                                    objectFit: "cover",
-                                                }}
-                                            />
-                                            <div>
-                                                <div
+                                    No reviews available
+                                </div>
+                            ) : (
+                                companyReviews.map((review) => (
+                                    <div
+                                        key={review.id}
+                                        style={{
+                                            padding: "12px",
+                                            borderRadius: "12px",
+
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "6px",
+                                        }}
+                                    >
+                                        {/* Reviewer Info + Rating Stars */}
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            {/* Reviewer Info */}
+                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                <img
+                                                    src={review.studentImage || "/avatars/nina.jpeg"}
+                                                    alt={review.name}
                                                     style={{
-                                                        fontWeight: 600,
-                                                        fontSize: "14px",
-                                                        color: "#1E1E1E",
+                                                        width: "32px",
+                                                        height: "32px",
+                                                        borderRadius: "50%",
+                                                        objectFit: "cover",
                                                     }}
-                                                >
-                                                    {review.name}
-                                                </div>
-                                                <div style={{ fontSize: "12px", color: "#888" }}>
-                                                    {new Date(review.createdAt).toLocaleDateString()}
+                                                />
+                                                <div>
+                                                    <div
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontSize: "14px",
+                                                            color: "#1E1E1E",
+                                                        }}
+                                                    >
+                                                        {review.name}
+                                                    </div>
+                                                    <div style={{ fontSize: "12px", color: "#888" }}>
+                                                        {new Date(review.createdAt).toLocaleDateString()}
+                                                    </div>
                                                 </div>
                                             </div>
+
+                                            {/* Rating Stars with SVG */}
+                                            <div style={{ display: "flex", gap: "4px" }}>
+                                                {Array.from({ length: 5 }, (_, i) => (
+                                                    <span key={i}>
+                                                        {i < review.rating ? (
+                                                            // Filled Star
+                                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#FFAB00" />
+                                                            </svg>
+                                                        ) : (
+                                                            // Empty Star
+                                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <g opacity="0.48">
+                                                                    <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#919EAB" />
+                                                                </g>
+                                                            </svg>
+                                                        )}
+                                                    </span>
+                                                ))}
+                                            </div>
+
                                         </div>
 
-                                        {/* Rating Stars with SVG */}
-                                        <div style={{ display: "flex", gap: "4px" }}>
-                                            {Array.from({ length: 5 }, (_, i) => (
-                                                <span key={i}>
-                                                    {i < review.rating ? (
-                                                        // Filled Star
-                                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#FFAB00" />
-                                                        </svg>
-                                                    ) : (
-                                                        // Empty Star
-                                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <g opacity="0.48">
-                                                                <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#919EAB" />
-                                                            </g>
-                                                        </svg>
-                                                    )}
-                                                </span>
-                                            ))}
-                                        </div>
-
+                                        {/* Review Text */}
+                                        <div style={{ fontSize: "13px", color: "#333" }}>{review.review}</div>
                                     </div>
-
-                                    {/* Review Text */}
-                                    <div style={{ fontSize: "13px", color: "#333" }}>{review.review}</div>
-                                </div>
-                            ))}
+                                )))}
 
                         </div>
                     </div>
@@ -2343,75 +2601,91 @@ export default function TopCompanyPage() {
                                 gap: "12px",
                             }}
                         >
-                            {companyReviews.map((review) => (
+                            {companyReviews.length === 0 ? (
                                 <div
-                                    key={review.id}
                                     style={{
-                                        padding: "12px",
-                                        borderRadius: "12px",
-
+                                        flex: 1,
                                         display: "flex",
-                                        flexDirection: "column",
-                                        gap: "6px",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#919EAB",
+                                        fontSize: "14px",
+                                        textAlign: "center",
+                                        padding: "24px",
                                     }}
                                 >
-                                    {/* Reviewer Info + Rating Stars */}
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        {/* Reviewer Info */}
-                                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                            <img
-                                                src={review.studentImage || "/avatars/nina.jpeg"}
-                                                alt={review.name}
-                                                style={{
-                                                    width: "32px",
-                                                    height: "32px",
-                                                    borderRadius: "50%",
-                                                    objectFit: "cover",
-                                                }}
-                                            />
-                                            <div>
-                                                <div
+                                    No reviews available
+                                </div>
+                            ) : (
+                                companyReviews.map((review) => (
+                                    <div
+                                        key={review.id}
+                                        style={{
+                                            padding: "12px",
+                                            borderRadius: "12px",
+
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "6px",
+                                        }}
+                                    >
+                                        {/* Reviewer Info + Rating Stars */}
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            {/* Reviewer Info */}
+                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                <img
+                                                    src={review.studentImage || "/avatars/nina.jpeg"}
+                                                    alt={review.name}
                                                     style={{
-                                                        fontWeight: 600,
-                                                        fontSize: "14px",
-                                                        color: "#1E1E1E",
+                                                        width: "32px",
+                                                        height: "32px",
+                                                        borderRadius: "50%",
+                                                        objectFit: "cover",
                                                     }}
-                                                >
-                                                    {review.name}
-                                                </div>
-                                                <div style={{ fontSize: "12px", color: "#888" }}>
-                                                    {new Date(review.createdAt).toLocaleDateString()}
+                                                />
+                                                <div>
+                                                    <div
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontSize: "14px",
+                                                            color: "#1E1E1E",
+                                                        }}
+                                                    >
+                                                        {review.name}
+                                                    </div>
+                                                    <div style={{ fontSize: "12px", color: "#888" }}>
+                                                        {new Date(review.createdAt).toLocaleDateString()}
+                                                    </div>
                                                 </div>
                                             </div>
+
+                                            {/* Rating Stars with SVG */}
+                                            <div style={{ display: "flex", gap: "4px" }}>
+                                                {Array.from({ length: 5 }, (_, i) => (
+                                                    <span key={i}>
+                                                        {i < review.rating ? (
+                                                            // Filled Star
+                                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#FFAB00" />
+                                                            </svg>
+                                                        ) : (
+                                                            // Empty Star
+                                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <g opacity="0.48">
+                                                                    <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#919EAB" />
+                                                                </g>
+                                                            </svg>
+                                                        )}
+                                                    </span>
+                                                ))}
+                                            </div>
+
                                         </div>
 
-                                        {/* Rating Stars with SVG */}
-                                        <div style={{ display: "flex", gap: "4px" }}>
-                                            {Array.from({ length: 5 }, (_, i) => (
-                                                <span key={i}>
-                                                    {i < review.rating ? (
-                                                        // Filled Star
-                                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#FFAB00" />
-                                                        </svg>
-                                                    ) : (
-                                                        // Empty Star
-                                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <g opacity="0.48">
-                                                                <path d="M14.6336 17.4998C14.5004 17.5004 14.3689 17.4689 14.2503 17.4082L10.0003 15.1832L5.75029 17.4082C5.61228 17.4807 5.45669 17.5131 5.30119 17.5017C5.14569 17.4902 4.99652 17.4354 4.87065 17.3433C4.74477 17.2513 4.64724 17.1258 4.58914 16.9811C4.53103 16.8365 4.51469 16.6784 4.54196 16.5248L5.37529 11.8332L1.94196 8.49984C1.83484 8.39295 1.75885 8.2589 1.72215 8.11209C1.68544 7.96528 1.68941 7.81124 1.73362 7.66651C1.78192 7.51841 1.87077 7.38681 1.99008 7.28664C2.10939 7.18648 2.25439 7.12177 2.40862 7.09984L7.15862 6.40818L9.25029 2.13318C9.31853 1.99229 9.42507 1.87346 9.55772 1.79032C9.69036 1.70718 9.84374 1.66309 10.0003 1.66309C10.1568 1.66309 10.3102 1.70718 10.4429 1.79032C10.5755 1.87346 10.6821 1.99229 10.7503 2.13318L12.867 6.39984L17.617 7.09151C17.7712 7.11343 17.9162 7.17815 18.0355 7.27831C18.1548 7.37847 18.2437 7.51007 18.292 7.65818C18.3362 7.80291 18.3401 7.95694 18.3034 8.10376C18.2667 8.25057 18.1907 8.38461 18.0836 8.49151L14.6503 11.8248L15.4836 16.5165C15.5134 16.6727 15.4978 16.8342 15.4387 16.9819C15.3797 17.1295 15.2796 17.2572 15.1503 17.3498C14.9994 17.4556 14.8177 17.5083 14.6336 17.4998Z" fill="#919EAB" />
-                                                            </g>
-                                                        </svg>
-                                                    )}
-                                                </span>
-                                            ))}
-                                        </div>
-
+                                        {/* Review Text */}
+                                        <div style={{ fontSize: "13px", color: "#333" }}>{review.review}</div>
                                     </div>
-
-                                    {/* Review Text */}
-                                    <div style={{ fontSize: "13px", color: "#333" }}>{review.review}</div>
-                                </div>
-                            ))}
+                                )))}
 
                         </div>
                     </div>
@@ -2435,21 +2709,21 @@ export default function TopCompanyPage() {
                         <div style={{ width: "100%", maxWidth: "420px" }}>
                             {/* Upload Box */}
                             <div
-                                onClick={() => document.getElementById("file-input")?.click()}
+                                onClick={() => document.getElementById("file-input-2")?.click()}
                                 onDragOver={(e) => {
                                     e.preventDefault();
-                                    setDragging(true);
+                                    setDragging2(true);
                                 }}
-                                onDragLeave={() => setDragging(false)}
+                                onDragLeave={() => setDragging2(false)}
                                 onDrop={(e) => {
                                     e.preventDefault();
-                                    setDragging(false);
-                                    handleFiles(Array.from(e.dataTransfer.files));
+                                    setDragging2(false);
+                                    handleFiles2(Array.from(e.dataTransfer.files));
                                 }}
                                 style={{
                                     height: "130px",
                                     borderRadius: "16px",
-                                    background: dragging ? "#FFF7CC" : "#F5F5F5",
+                                    background: dragging2 ? "#FFF7CC" : "#F5F5F5",
                                     display: "flex",
                                     flexDirection: "column",
                                     justifyContent: "center",
@@ -2458,13 +2732,13 @@ export default function TopCompanyPage() {
                                 }}
                             >
                                 <input
-                                    id="file-input"
+                                    id="file-input-2"
                                     type="file"
                                     multiple
                                     accept="image/*,application/pdf"
                                     style={{ display: "none" }}
                                     onChange={(e) =>
-                                        e.target.files && handleFiles(Array.from(e.target.files))
+                                        e.target.files && handleFiles2(Array.from(e.target.files))
                                     }
                                 />
 
@@ -2483,15 +2757,17 @@ export default function TopCompanyPage() {
                             {files.length > 0 && (
                                 <button
                                     onClick={clearAll}
+                                    disabled={clearingAll}
                                     style={{
                                         marginTop: "12px",
                                         background: "none",
                                         border: "none",
-                                        color: "#D32F2F",
-                                        cursor: "pointer",
+                                        color: clearingAll ? "#999" : "#D32F2F",
+                                        cursor: clearingAll ? "not-allowed" : "pointer",
+                                        opacity: clearingAll ? 0.6 : 1,
                                     }}
                                 >
-                                    Clear all
+                                    {clearingAll ? "Deleting..." : "Clear all"}
                                 </button>
                             )}
 
@@ -2510,7 +2786,7 @@ export default function TopCompanyPage() {
                             >
                                 {files.map((item, index) => (
                                     <div
-                                        key={index}
+                                        key={item.id || index}
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -2558,12 +2834,12 @@ export default function TopCompanyPage() {
                                         {/* Info */}
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 600 }}>
-                                                {item.file.name.length > 15
-                                                    ? item.file.name.slice(0, 15) + "..."
-                                                    : item.file.name}
+                                                {((item.file?.name || item.fileName || '').length > 15
+                                                    ? (item.file?.name || item.fileName || '').slice(0, 15) + "..."
+                                                    : (item.file?.name || item.fileName || ''))}
                                             </div>
                                             <div style={{ fontSize: "12px", color: "rgba(23,23,23,0.48)" }}>
-                                                {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                                                {item.file ? (item.file.size / 1024 / 1024).toFixed(2) : '0.00'} MB
                                             </div>
 
                                             {/* Progress */}
@@ -2597,9 +2873,9 @@ export default function TopCompanyPage() {
 
                                         {/* Actions */}
                                         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                            {item.error && (
+                                            {item.error && item.file && (
                                                 <button
-                                                    onClick={() => simulateUpload(index)}
+                                                    onClick={() => uploadFile2(item.file!, index)}
                                                     style={{
                                                         border: "none",
                                                         background: "#FFAB00",
@@ -2613,17 +2889,19 @@ export default function TopCompanyPage() {
                                             )}
 
                                             <button
-                                                onClick={() => removeFile(index)}
+                                                onClick={() => removeFile2(index)}
+                                                disabled={deletingFiles2.has(index)}
                                                 style={{
                                                     border: "none",
-                                                    background: "#D32F2F",
+                                                    background: deletingFiles2.has(index) ? "#999" : "#D32F2F",
                                                     color: "#FFF",
                                                     borderRadius: "55px",
                                                     padding: "5px 10px",
-                                                    cursor: "pointer",
+                                                    cursor: deletingFiles2.has(index) ? "not-allowed" : "pointer",
+                                                    opacity: deletingFiles2.has(index) ? 0.6 : 1,
                                                 }}
                                             >
-                                                ✕
+                                                {deletingFiles2.has(index) ? "..." : "✕"}
                                             </button>
                                         </div>
                                     </div>
@@ -2637,59 +2915,100 @@ export default function TopCompanyPage() {
                     <div
                         className="flex flex-row gap-4 overflow-x-auto overflow-y-hidden no-scrollbar"
                         style={{
-                            height: "295px", // container height
+                            height: "295px",
                             background: "#FFFFFF",
                             boxShadow:
                                 "0px 0px 2px rgba(145, 158, 171, 0.2), 0px 12px 24px -4px rgba(145, 158, 171, 0.12)",
                             borderRadius: "24px",
-                            padding: "16px", // optional
+                            padding: "16px",
                         }}
                     >
-
-                    {(employees.length > 0 ? employees : []).slice(0, 6).map((employee) => {
-                        const student = employee.student;
-                        const cardData: any = {
-                            applicantId: student?.id || employee.id,
-                            name: student?.name || "Employee",
-                            experience: "",
-                            education: "",
-                            language: "",
-                            portfolio: { github: "", linkedin: "" },
-                            skills: [],
-                            description: "",
-                            profileRanking: 0,
-                            profileComplete: student?.profileComplete ?? 0,
-                            status: student?.status || "",
-                            salaryPaid: "",
-                            startDate: "",
-                            endDate: "",
-                            workProgress: 0,
-                            contractStatus: employee.status,
-                            contractTitle: employee.contractTitle,
-                            paymentStatus: "",
-                            availability: "",
-                            image: student?.image || "/avatars/nina.jpeg",
-                            image1: student?.image || "/avatars/nina.jpeg",
-                            city: "R i y a d h",
-                        };
-                        return (
+                        {employeesLoading ? (
                             <div
-                            key={cardData.applicantId}
-                                className="flex-shrink-0" // prevents shrinking
                                 style={{
-                                    transform: "scale(0.6)", // scale down to fit container
-                                    transformOrigin: "top left",
-                                    marginRight: "-120px", // tweak this to remove extra gap
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
                                 }}
                             >
-                                <ApplicantCard
-                            applicant={cardData}
-                            onClick={() => console.log(cardData.applicantId)}
-                                />
+                                Loading employees...
                             </div>
-                        );
-                    })}
+                        ) : employees.length > 0 ? (
+                            employees.slice(0, 6).map((employee) => {
+                                const student = employee.student;
+                                const cardData: any = {
+                                    applicantId: student?.id || employee.id,
+                                    name: student?.name || "Employee",
+                                    experience: "",
+                                    education: "",
+                                    language: "",
+                                    portfolio: { github: "", linkedin: "" },
+                                    skills: [],
+                                    description: "",
+                                    profileRanking: 0,
+                                    profileComplete: student?.profileComplete ?? 0,
+                                    status: student?.status || "",
+                                    salaryPaid: "",
+                                    startDate: "",
+                                    endDate: "",
+                                    workProgress: 0,
+                                    contractStatus: employee.status,
+                                    contractTitle: employee.contractTitle,
+                                    paymentStatus: "",
+                                    availability: "",
+                                    image: student?.image || "/images/A11.jpeg",
+                                    image1: student?.image || "/images/A11.jpeg",
+                                    city: "R i y a d h",
+                                };
+                                return (
+                                    <div
+                                        key={cardData.applicantId}
+                                        className="flex-shrink-0"
+                                        style={{
+                                            transform: "scale(0.6)",
+                                            transformOrigin: "top left",
+                                            marginRight: "-120px",
+                                        }}
+                                    >
+                                        <ApplicantCard
+                                            applicant={{
+                                                applicantId: cardData.applicantId,
+                                                contractTitle: employee.contractTitle,
+                                                contractStatus: employee.status,
+                                                contractNumber: employee.contractNumber,
+                                                student: {
+                                                    id: student?.id || cardData.applicantId,
+                                                    name: student?.name || "Employee",
+                                                    image: student?.image,
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div
+                                style={{
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
+                                }}
+                            >
+                                No employees assigned to this company yet.
+                            </div>
+                        )}
                     </div>
+
                     {/* =======================
                     END MOBILE LAYOUT
                 ======================= */}
@@ -2722,7 +3041,7 @@ export default function TopCompanyPage() {
                 Program={editingProgram}
                 onClose={() => setIsModalOpen2(false)}
                 onSave={async (data) => {
-            await api.post('/company/programs/add', { programs: data.Program });
+                    await api.post('/company/programs/add', { programs: data.Program });
                     await getPrograms();
                     await getProfile();
                     setIsModalOpen2(false);
@@ -2732,16 +3051,16 @@ export default function TopCompanyPage() {
                 isOpen={isModalOpen3}
                 Address={editingAddress}
                 onClose={() => setIsModalOpen3(false)}
-        onSave={async (data) => {
-            await api.post('/api/company/addresses', {
-                name: data.address,
-                tag: data.phoneNumber || "Primary",
-                address: data.address,
-                phoneNumber: data.phoneNumber,
-            });
-            await getProfile();
-            setIsModalOpen3(false);
-        }}
+                onSave={async (data) => {
+                    await api.post('/api/company/addresses', {
+                        name: data.address,
+                        tag: data.phoneNumber || "Primary",
+                        address: data.address,
+                        phoneNumber: data.phoneNumber,
+                    });
+                    await getProfile();
+                    setIsModalOpen3(false);
+                }}
             />
 
 

@@ -294,14 +294,15 @@ type ContractRowProps = {
   applicant: typeof mockApplicants[0] & { applicationId?: string; appliedAt?: string; truncatedId?: string };
   onMainClick?: () => void;
   onSideClick?: () => void;
+  isSelected: boolean; // ✅ ADD THIS
+  onSelect: (id: string, checked: boolean) => void;
   showCheckbox?: boolean;
   onStatusChange?: (applicationId: string, newStatus: 'pending' | 'accepted' | 'rejected') => void;
 };
 
-const ContractRow = ({ applicant, onMainClick, onSideClick, showCheckbox = false, onStatusChange }: ContractRowProps) => {
+const ContractRow = ({ applicant, onMainClick, onSideClick, showCheckbox = false, onStatusChange,isSelected,onSelect }: ContractRowProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [checked, setChecked] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -333,11 +334,12 @@ const ContractRow = ({ applicant, onMainClick, onSideClick, showCheckbox = false
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
             onClick={(e) => {
-              e.stopPropagation(); // 🔥 prevent row click
-              setChecked((prev) => !prev);
+              e.stopPropagation();
+              onSelect(applicant.applicantId!, !isSelected);
             }}
+
           >
-            {checked ? (
+            {isSelected ? (
               /* ✅ SELECTED SVG */
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path
@@ -539,6 +541,87 @@ const ContractRow = ({ applicant, onMainClick, onSideClick, showCheckbox = false
 
 
 export default function ApplicantPage() {
+      const [bulkUpdating, setBulkUpdating] = useState(false);
+
+
+      const [selectedIds, setSelectedIds] = useState<string[]>([]);
+      const handleSelect = (id: string, checked: boolean) => {
+        setSelectedIds((prev) =>
+          checked ? [...prev, id] : prev.filter((x) => x !== id)
+        );
+      };
+
+      const handleBulkStatusChange = async (
+        newStatus: "accepted" | "rejected"
+      ) => {
+        if (bulkUpdating) return;
+
+        // 🔥 Clear UI immediately
+        const idsToUpdate = [...selectedIds];
+        setSelectedIds([]);              // hide bulk bar instantly
+        setBulkUpdating(true);
+
+        try {
+          const selectedApplicants = applicants.filter(
+            app => idsToUpdate.includes(app.applicantId!) && app.applicationId
+          );
+
+          await Promise.all(
+            selectedApplicants.map(app =>
+              updateApplicationStatus(app.applicationId!, newStatus)
+            )
+          );
+
+           const response = await getAllApplications(1, 100);
+            const transformedApplicants = response.items.map((app, index) => {
+              const student = app.student;
+              const applicantId = student?.id || app.id;
+              const truncatedId = applicantId.slice(-3);
+              return {
+                applicantId: applicantId,
+                applicationId: app.id,
+                truncatedId: truncatedId,
+                transferId: `316400ACZ${String(index + 1).padStart(2, '0')}`,
+                name: student?.name || "Unknown",
+                appliedAt: app.appliedAt,
+                experience: "N/A",
+                education: "N/A",
+                language: "N/A",
+                portfolio: {
+                  github: "",
+                  linkedin: "",
+                },
+                skills: [],
+                description: student?.description || "",
+                profileRanking: student?.profileRanking || 0,
+                profileComplete: student?.profileComplete || 0,
+                status: app.status,
+                salaryPaid: "$0",
+                startDate: "",
+                endDate: "",
+                workProgress: 0,
+                contractStatus: "",
+                contractTitle: "",
+                paymentStatus: "",
+                availability: student?.availability || "Remote",
+                image: "/images/A1.jpeg",
+                image1: "/images/A11.jpeg",
+                city: "",
+                email: (student as any)?.email || "—",
+                salaryExpectation: (student as any)?.salaryExpectation || null,
+              };
+            });
+
+          setApplicants(transformedApplicants);
+        } catch (error) {
+          console.error("Bulk status update failed:", error);
+        } finally {
+          setBulkUpdating(false);
+        }
+      };
+
+
+
       const router = useRouter();
       const [searchQuery, setSearchQuery] = useState("");
       const [currentPage, setCurrentPage] = useState(1);
@@ -817,6 +900,39 @@ export default function ApplicantPage() {
           </div>
           )}
 
+          {selectedIds.length > 0 && !showApplicants && (
+            <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+              <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                  <span className="text-sm font-semibold">
+                    {selectedIds.length} selected
+                  </span>
+
+                  <div className="flex gap-2">
+                    <button
+                      disabled={bulkUpdating}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 skew-x-[-12deg]"
+                      onClick={() => handleBulkStatusChange("accepted")}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]">Accept</span>
+                      
+                    </button>
+
+                    <button
+                      disabled={bulkUpdating}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 skew-x-[-12deg]"
+                      onClick={() => handleBulkStatusChange("rejected")}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]">Reject</span>
+                    </button>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+
          {/* Contracts Grid */}
           {!applicationsLoading && !showApplicants && (
             <div className="flex flex-col items-center justify-center gap-2 mt-4">
@@ -825,9 +941,11 @@ export default function ApplicantPage() {
                   <ContractRow
                     key={applicant.applicantId}
                     applicant={applicant}
+                    isSelected={selectedIds.includes(applicant.applicantId!)}
+                    onSelect={handleSelect}
                     onMainClick={() => router.push(`/Company/applicant/${applicant.applicantId}`)}
                     onStatusChange={handleStatusChange}
-                    showCheckbox={true}
+                    showCheckbox
                   />
                 ))
               ) : (

@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 export interface Notification {
   id: string
   type: 'info' | 'success' | 'warning' | 'error'
+  originalType?: string
   title: string
   message: string
   read: boolean
@@ -57,6 +58,7 @@ const mapBackendToFrontend = (backendNotification: any): Notification => {
   return {
     id: backendNotification.id,
     type: mapBackendTypeToFrontend(backendNotification.type),
+    originalType: backendNotification.type,
     title: backendNotification.title,
     message: backendNotification.message,
     read: backendNotification.read,

@@ -5,7 +5,6 @@ import { useTopCompanyHandler, type TopCompanyDetail } from "@/src/hooks/company
 import { useReviewHandler } from "@/src/hooks/companyapihandler/useReviewHandler";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useSidebar } from "@/src/lib/sidebarContext";
-import { mockApplicants } from "@/src/mocks/mockApplicants";
 import { ArrowUpRight } from 'lucide-react';
 
 interface ClipImageProps {
@@ -15,7 +14,25 @@ interface ClipImageProps {
 }
 
 const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
     const hasImage = !!src;
+
+    useEffect(() => {
+        if (src) {
+            setImageLoaded(false);
+            setImageError(false);
+
+            const img = new Image();
+            img.onload = () => {
+                setImageLoaded(true);
+            };
+            img.onerror = () => {
+                setImageError(true);
+            };
+            img.src = src;
+        }
+    }, [src]);
 
     return (
         <svg
@@ -23,31 +40,27 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
             height={height}
             viewBox={`0 0 ${width} ${height}`}
             xmlns="http://www.w3.org/2000/svg"
-            style={{ background: "transparent" }} // transparent background
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            style={{ background: "transparent" }}
         >
             <defs>
-                <mask
-                    id="mask0"
-                    maskUnits="userSpaceOnUse"
-                    x={0}
-                    y={0}
-                    width={width}
-                    height={height}
-                    style={{ maskType: "alpha" }}
-                >
-                    <path d="M222.5 0.5L155 0H83.5L70 13L26.5 26H0V35.5V240.55C32.3519 259.391 69.9679 270.183 110.104 270.183C157.941 270.183 202.32 256.216 238.5 231.85V105V98.5H234H229H222.5V94V0.5Z" fill="white" />
-                </mask>
+                <clipPath id={`clip-${width}-${height}`}>
+                    <path d="M222.5 0.5L155 0H83.5L70 13L26.5 26H0V35.5V240.55C32.3519 259.391 69.9679 270.183 110.104 270.183C157.941 270.183 202.32 256.216 238.5 231.85V105V98.5H234H229H222.5V94V0.5Z" />
+                </clipPath>
             </defs>
 
-            {hasImage ? (
-                <g mask="url(#mask0)">
-                    <image
-                        href={src}
-                        width={width}
-                        height={height}
-                        preserveAspectRatio="xMidYMid slice"
-                    />
-                </g>
+            {hasImage && !imageError ? (
+                <image
+                    href={src}
+                    xlinkHref={src}
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    preserveAspectRatio="xMidYMid slice"
+                    clipPath={`url(#clip-${width}-${height})`}
+                    crossOrigin="anonymous"
+                />
             ) : (
                 <text
                     x="50%"
@@ -58,7 +71,7 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
                     fontSize="16"
                     fontFamily="sans-serif"
                 >
-                    No image found
+                    {imageError ? 'Failed to load' : 'No image'}
                 </text>
             )}
         </svg>
@@ -66,13 +79,31 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
 };
 
 
+type EmployeeApplicant = {
+    applicantId: string;
+    contractTitle?: string;
+    student: {
+        id: string;
+        name: string | null;
+        image?: string | null;
+    };
+};
+
 const ApplicantCard = ({
     applicant,
     onClick,
 }: {
-    applicant: typeof mockApplicants[0];
+    applicant: EmployeeApplicant;
     onClick?: () => void;
 }) => {
+    const router = useRouter();
+
+    const handleNavigate = () => {
+        if (applicant.student?.id) {
+            router.push(`/Student/top-student/${applicant.student.id}`);
+        }
+    };
+
     return (
         <div className="relative w-[268px] h-[462px]">
             {/* SVG Card Body */}
@@ -449,11 +480,10 @@ const ApplicantCard = ({
                 style={{
                     left: "23px",
                     top: "100px",
-
                 }}
             >
                 <ClipImage
-                    src={applicant.image1}
+                    src={applicant.student?.image as string | undefined}
                     width={239}
                     height={271}
                 />
@@ -465,10 +495,12 @@ const ApplicantCard = ({
                 style={{
                     left: "87px",
                     top: "311px",
-                    zIndex: 2, // higher layer
-
+                    zIndex: 2,
+                    cursor: "pointer",
+                    background: "none",
+                    border: "none",
                 }}
-                onClick={onClick}
+                onClick={handleNavigate}
             >
                 <svg width="99" height="99" viewBox="0 0 99 99" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="48.757" cy="42.9762" r="31.4049" fill="black" />
@@ -595,74 +627,7 @@ const ApplicantCard = ({
                 </svg>
             </button>
 
-            {/* city name */}
-            <div
-                style={{
-                    position: "absolute",
-                    left: "40px",
-                    top: "125px",
-
-                    fontFamily: "'Public Sans', sans-serif",
-                    fontStyle: "normal",
-                    fontWeight: 700,
-                    fontSize: "20px",
-                    lineHeight: "20px",
-                    color: "#1E1E1E",
-
-                    display: "flex",
-                    flexDirection: "column", // makes characters stack vertically
-                    alignItems: "center",
-                }}
-            >
-                {applicant.city.split("").map((char, index) => (
-                    <span key={index}>{char}</span>
-                ))}
-            </div>
-
-            {/* city name */}
-            <div
-                style={{
-                    position: "absolute",
-                    left: "170px",
-                    top: "35px",
-
-                    fontFamily: "'Public Sans', sans-serif",
-                    fontStyle: "normal",
-                    fontWeight: 700,
-                    fontSize: "20px",
-                    lineHeight: "20px",
-                    color: "#1E1E1E",
-
-                    display: "flex",
-                    flexDirection: "column", // makes characters stack vertically
-                    alignItems: "center",
-                }}
-            >
-
-                <svg width="66" height="70" viewBox="0 0 66 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <g clipPath="url(#clip0_13017_51079)">
-                        <path d="M2.4319 9.19127C1.69074 8.78033 1.07601 8.17378 0.654398 7.43744C0.22522 6.66326 0 5.7922 0 4.90652C0 4.02084 0.22522 3.14978 0.654398 2.37559C1.07768 1.64228 1.69215 1.03833 2.4319 0.628516C3.18879 0.216065 4.03661 0 4.89812 0C5.75962 0 6.60744 0.216065 7.36433 0.628516C8.1029 1.03757 8.71538 1.64185 9.13511 2.37559C9.56001 3.15117 9.78278 4.02169 9.78278 4.90652C9.78278 5.79135 9.56001 6.66186 9.13511 7.43744C8.71705 8.17421 8.10431 8.78108 7.36433 9.19127C6.60744 9.60372 5.75962 9.81978 4.89812 9.81978C4.03661 9.81978 3.18879 9.60372 2.4319 9.19127ZM6.58614 8.01741C7.08543 7.72388 7.4897 7.29227 7.75051 6.77431C8.04017 6.19407 8.18443 5.55183 8.17078 4.90315C8.18498 4.25657 8.04066 3.61638 7.75051 3.03873C7.48926 2.52457 7.08478 2.09743 6.58614 1.80912C6.06522 1.52818 5.48292 1.38112 4.89139 1.38112C4.29985 1.38112 3.71756 1.52818 3.19664 1.80912C2.6979 2.0973 2.29339 2.52447 2.03227 3.03873C1.74192 3.61631 1.59758 4.25655 1.612 4.90315C1.59813 5.55185 1.74241 6.19415 2.03227 6.77431C2.29294 7.29237 2.69724 7.724 3.19664 8.01741C3.71609 8.30293 4.29896 8.4526 4.89139 8.4526C5.48382 8.4526 6.06669 8.30293 6.58614 8.01741Z" fill="#1E1E1E" />
-                        <path d="M15.3665 2.34796C15.8485 2.10304 16.3829 1.97973 16.9233 1.98874C17.5617 1.98063 18.1898 2.1507 18.7373 2.47997C19.2849 2.80923 19.7302 3.2847 20.0235 3.85316C20.3449 4.48066 20.5059 5.17826 20.4922 5.88348C20.5043 6.59513 20.3434 7.29904 20.0235 7.93447C19.7324 8.51439 19.2864 9.00199 18.7353 9.34301C18.1907 9.67862 17.5626 9.85331 16.9233 9.84699C16.3881 9.85707 15.8585 9.73624 15.3804 9.49497C14.9567 9.2816 14.5814 8.98302 14.2779 8.61784V13.3416H12.7072V2.11283H14.2779V3.23184C14.571 2.86003 14.9428 2.55813 15.3665 2.34796ZM18.5698 4.52304C18.3717 4.15886 18.0759 3.85752 17.7158 3.6531C17.369 3.45675 16.9771 3.35433 16.5788 3.35592C16.1844 3.35595 15.797 3.46083 15.4562 3.65984C15.0953 3.86964 14.7996 4.1756 14.6017 4.54372C14.3778 4.96376 14.2662 5.43478 14.2779 5.9109C14.2667 6.38925 14.3782 6.86247 14.6017 7.28527C14.7921 7.64548 15.0767 7.94697 15.425 8.15741C15.7733 8.36784 16.1721 8.47929 16.5788 8.47981C16.9789 8.48101 17.3717 8.37366 17.7158 8.16915C18.0784 7.95254 18.374 7.63943 18.5698 7.26459C18.7928 6.83916 18.9042 6.36391 18.8937 5.88348C18.906 5.40944 18.7943 4.94043 18.5698 4.52304Z" fill="#1E1E1E" />
-                        <path d="M30.3217 6.5051H24.5209C24.5435 7.06356 24.7863 7.59021 25.196 7.96939C25.6026 8.33857 26.1357 8.53632 26.6842 8.52148C27.0549 8.54659 27.4245 8.45842 27.7443 8.26859C28.064 8.07876 28.3189 7.7962 28.4751 7.45822H30.1701C29.9467 8.14934 29.5101 8.75149 28.9232 9.17787C28.2699 9.64021 27.4834 9.87533 26.6842 9.8473C26.0026 9.85863 25.33 9.6896 24.7344 9.35725C24.1634 9.03365 23.6952 8.55488 23.3839 7.97614C23.0479 7.34091 22.8796 6.63005 22.895 5.9112C22.8797 5.19417 23.043 4.48462 23.37 3.84672C23.6724 3.26784 24.137 2.79015 24.7066 2.47235C25.3128 2.14206 25.9943 1.9755 26.6842 1.98905C27.3523 1.97711 28.0121 2.13882 28.5994 2.45841C29.1521 2.76415 29.6062 3.2218 29.9082 3.77749C30.2288 4.37793 30.3902 5.05089 30.3769 5.73182C30.3786 5.99063 30.3602 6.24918 30.3217 6.5051ZM28.7371 5.23458C28.7424 4.97067 28.6897 4.70879 28.5825 4.46765C28.4754 4.22652 28.3165 4.01207 28.1172 3.83953C27.6984 3.48456 27.1633 3.29765 26.6151 3.31487C26.1024 3.30387 25.6047 3.48907 25.2233 3.83278C24.8276 4.19783 24.582 4.69766 24.5344 5.23458H28.7371Z" fill="#1E1E1E" />
-                        <path d="M39.755 3.62815C40.1601 3.97545 40.4514 4.43721 40.5906 4.95307C40.7422 5.54789 40.7411 6.1715 40.5874 6.76579L39.5903 11.1416L38.0725 10.794L39.0176 6.6471C39.181 6.10103 39.1277 5.51279 38.8687 5.00522C38.7342 4.78488 38.5545 4.59577 38.3414 4.45049C38.1284 4.30522 37.8868 4.20713 37.633 4.1627C37.384 4.09247 37.1232 4.07576 36.8674 4.11364C36.6115 4.15153 36.3664 4.24316 36.1484 4.38255C35.6914 4.72398 35.3858 5.23091 35.2966 5.79514L34.3516 9.94254L32.8203 9.59186L34.5108 2.17285L36.0421 2.52353L35.8488 3.37189C36.1785 3.11983 36.5636 2.95043 36.9719 2.8778C37.4027 2.79662 37.8457 2.80642 38.2726 2.90657C38.8182 3.02179 39.3272 3.26958 39.755 3.62815Z" fill="#1E1E1E" />
-                        <path d="M51.3561 11.2578L48.6138 14.4503C48.5337 14.5272 48.4702 14.6198 48.4275 14.7224C48.3847 14.825 48.3636 14.9353 48.3654 15.0464C48.4207 15.2843 48.5613 15.4934 48.7605 15.634L49.4916 16.2648L48.6376 17.2588L47.6975 16.4478C47.2289 16.0956 46.9057 15.5831 46.7892 15.0078C46.7723 14.7127 46.8195 14.4174 46.9272 14.1422C47.0349 13.867 47.2006 13.6184 47.4131 13.4136L50.155 10.2215L49.4764 9.63571L50.3124 8.66237L50.9915 9.24817L52.2231 7.81445L53.4238 8.85074L52.1922 10.2845L53.5911 11.492L52.7551 12.4654L51.3561 11.2578Z" fill="#1E1E1E" />
-                        <path d="M51.2162 19.7458C51.1845 19.0859 51.3387 18.4303 51.6612 17.854C52.0168 17.2287 52.528 16.7064 53.1449 16.338C53.7458 15.9451 54.4396 15.7182 55.1561 15.6802C55.821 15.6467 56.4819 15.8029 57.0618 16.1307C57.6531 16.4794 58.1516 16.9659 58.5153 17.5489C58.879 18.1319 59.0971 18.7942 59.1511 19.4797C59.191 20.146 59.0418 20.81 58.7209 21.3949C58.3729 22.0237 57.8656 22.5494 57.2502 22.919C56.6477 23.3125 55.9504 23.5358 55.2319 23.565C54.5568 23.5898 53.8883 23.4249 53.3019 23.0889C52.6988 22.7438 52.193 22.2509 51.8316 21.6565C51.4633 21.0845 51.2511 20.4257 51.2162 19.7458ZM53.8361 21.7442C54.2002 21.9452 54.6136 22.039 55.0287 22.0149C55.5172 21.9824 55.9887 21.8218 56.3958 21.5491C56.8154 21.3038 57.1656 20.9553 57.4135 20.5366C57.6179 20.1812 57.7166 19.7745 57.6979 19.3646C57.6774 18.969 57.5557 18.5853 57.3444 18.2505C57.1384 17.9147 56.8485 17.6387 56.5034 17.4498C56.1469 17.2573 55.7419 17.1742 55.3386 17.2106C54.8569 17.2597 54.3946 17.4264 53.9921 17.6962C53.3845 18.0246 52.9278 18.5766 52.7183 19.236C52.6399 19.5216 52.6234 19.8207 52.6699 20.1132C52.7164 20.4057 52.8248 20.6848 52.9879 20.9318C53.1972 21.2704 53.4891 21.55 53.8361 21.7442Z" fill="#1E1E1E" />
-                        <path d="M65.3797 43.92L55.8037 41.0746V39.2929L63.0514 37.2766L55.8037 35.1361L55.7898 33.3683L65.3797 30.6475V32.3186L57.5812 34.3071L65.3797 36.4619V38.2297L57.6225 40.2321L65.3797 42.235V43.92Z" fill="#1E1E1E" />
-                        <path d="M56.1687 47.9566C56.491 47.3803 56.9684 46.9063 57.5466 46.589C58.1789 46.2477 58.8887 46.0764 59.6067 46.0918C60.3239 46.0781 61.0321 46.2545 61.6596 46.6029C62.2413 46.9279 62.7191 47.4117 63.0374 47.998C63.3542 48.6079 63.5196 49.2854 63.5196 49.973C63.5196 50.6606 63.3542 51.3381 63.0374 51.948C62.7188 52.534 62.241 53.0176 61.6596 53.3426C61.0321 53.6911 60.3239 53.8675 59.6067 53.8538C58.8876 53.8675 58.1781 53.6862 57.5533 53.3291C56.968 52.991 56.4885 52.4959 56.1687 51.8995C55.8402 51.2863 55.672 50.5997 55.6798 49.9038C55.6703 49.2231 55.8389 48.5517 56.1687 47.9566ZM57.3331 51.043C57.5353 51.4071 57.8362 51.7064 58.201 51.9062C58.6324 52.1386 59.1172 52.253 59.6067 52.238C60.0922 52.2533 60.5737 52.1439 61.0052 51.9202C61.3666 51.7276 61.6655 51.4352 61.8663 51.0776C62.0583 50.7313 62.1579 50.3413 62.1556 49.9451C62.1585 49.5512 62.0588 49.1633 61.8663 48.8198C61.6658 48.4672 61.3664 48.1814 61.0052 47.998C60.5709 47.7833 60.0906 47.6789 59.6067 47.6941C58.9177 47.6493 58.2384 47.8747 57.7121 48.3226C57.4945 48.5231 57.3223 48.7678 57.2071 49.0406C57.0918 49.3133 57.0361 49.6077 57.0438 49.9038C57.042 50.302 57.1416 50.6941 57.3331 51.043Z" fill="#1E1E1E" />
-                        <path d="M63.1959 59.2927C63.4203 59.7101 63.532 60.1791 63.5197 60.6532H61.8938V60.2526C61.9121 59.9995 61.8802 59.7453 61.7998 59.5047C61.7194 59.264 61.5922 59.0418 61.4255 58.8508C60.9667 58.4847 60.3829 58.3136 59.7996 58.3742H55.8037V56.7998H63.3959V58.3742H62.2934C62.67 58.595 62.9814 58.912 63.1959 59.2927Z" fill="#1E1E1E" />
-                        <path d="M59.5928 66.4923L55.8037 70.0004V67.8734L59.0694 65.0559H55.8037V63.4814H66V65.0559H60.075L63.3959 67.8181V70.0004L59.5928 66.4923Z" fill="#1E1E1E" />
-                    </g>
-                    <defs>
-                        <clipPath id="clip0_13017_51079">
-                            <rect width="66" height="70" fill="white" />
-                        </clipPath>
-                    </defs>
-                </svg>
-
-            </div>
-
-
-            {/* user name */}
+            {/* user name and contract details */}
             <div
                 style={{
                     position: "absolute",
@@ -675,72 +640,37 @@ const ApplicantCard = ({
                     flexDirection: "column",
                     alignItems: "center",
                     padding: "0px",
-                    zIndex: 1, // lower layer
+                    zIndex: 1,
                 }}
             >
-                {/* First Name */}
                 <div
                     style={{
-
-                        fontSize: "20px",
-                        lineHeight: "30px",
-                        fontWeight: 400,
+                        fontSize: "16px",
+                        lineHeight: "20px",
+                        fontWeight: 600,
                         color: "#1E1E1E",
                         textAlign: "center",
-                        marginBottom: "-8px",
+                        marginBottom: "4px",
                     }}
                 >
-                    {applicant.name}
+                    {applicant.student?.name || "Employee"}
                 </div>
-
-                {/* Last Name */}
                 <div
                     style={{
-
                         fontSize: "12px",
                         lineHeight: "16px",
-                        fontWeight: 400,
-                        color: "rgba(0, 0, 0, 0.64)",
+                        fontWeight: 500,
+                        color: "#637381",
                         textAlign: "center",
                     }}
                 >
-                    {applicant.name}
+                    {applicant.contractTitle || "No Contract Title"}
                 </div>
             </div>
 
-            {/* user profile-complete */}
-            <div
-                style={{
-                    position: "absolute",
-                    top: " 40px",
-                    left: "44px",
-                    fontStyle: "normal",
-                    fontWeight: 700,
-                    fontSize: "20px",
-                    lineHeight: "36px",
-                    display: "flex",
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    color: 'rgba(23, 23, 23, 0.48)',
-                }}
-            >
-                {applicant.profileComplete}%
-
-            </div>
         </div>
     );
 };
-
-type UploadItem = {
-    file: File;
-    preview?: string;
-    progress: number;
-    uploading: boolean;
-    error?: string;
-};
-
-const MAX_FILE_SIZE_MB = 5;
-const MAX_FILES = 5;
 
 export default function TopCompanyPage() {
     const { isCollapsed } = useSidebar();
@@ -748,10 +678,6 @@ export default function TopCompanyPage() {
     const { companyId } = params;
     const { topCompany, loading, error, getTopCompanyById } = useTopCompanyHandler();
     const { reviews: companyReviews, getReviews } = useReviewHandler();
-
-    // ============= file upload state (must be before conditional returns) ==============
-    const [files, setFiles] = useState<UploadItem[]>([]);
-    const [dragging, setDragging] = useState(false);
 
     useEffect(() => {
         if (companyId && typeof companyId === 'string') {
@@ -817,99 +743,6 @@ export default function TopCompanyPage() {
     
             );
         }
-
-    /* -----------------------------
-        FAKE UPLOAD (SIMULATION)
-    ------------------------------ */
-    const simulateUpload = (index: number) => {
-        setFiles((prev) =>
-            prev.map((f, i) =>
-                i === index ? { ...f, uploading: true, error: undefined } : f
-            )
-        );
-
-        let progress = 0;
-
-        const interval = setInterval(() => {
-            progress += 10;
-
-            setFiles((prev) =>
-                prev.map((f, i) =>
-                    i === index ? { ...f, progress } : f
-                )
-            );
-
-            if (progress >= 100) {
-                clearInterval(interval);
-
-                // simulate random failure
-                const failed = Math.random() < 0.2;
-
-                setFiles((prev) =>
-                    prev.map((f, i) =>
-                        i === index
-                            ? failed
-                                ? {
-                                    ...f,
-                                    uploading: false,
-                                    progress: 0,
-                                    error: "Upload failed. Retry.",
-                                }
-                                : { ...f, uploading: false, progress: 100 }
-                            : f
-                    )
-                );
-            }
-        }, 300);
-    };
-
-    /* -----------------------------
-        FILE HANDLER
-    ------------------------------ */
-    const handleFiles = (incoming: File[]) => {
-        if (files.length + incoming.length > MAX_FILES) {
-            alert(`Max ${MAX_FILES} files allowed`);
-            return;
-        }
-
-        incoming.forEach((file) => {
-            if (
-                !file.type.startsWith("image/") &&
-                file.type !== "application/pdf"
-            ) {
-                alert("Only images and PDFs allowed");
-                return;
-            }
-
-            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                alert(`Max file size ${MAX_FILE_SIZE_MB}MB`);
-                return;
-            }
-
-            const item: UploadItem = {
-                file,
-                preview: file.type.startsWith("image/")
-                    ? URL.createObjectURL(file)
-                    : undefined,
-                progress: 0,
-                uploading: false,
-            };
-
-            setFiles((prev) => {
-                const index = prev.length;
-                setTimeout(() => simulateUpload(index), 100);
-                return [...prev, item];
-            });
-        });
-    };
-
-    const removeFile = (index: number) => {
-        setFiles((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    const clearAll = () => {
-        setFiles([]);
-    };
 
     return (
         <DashboardLayout>
@@ -1218,8 +1051,8 @@ export default function TopCompanyPage() {
                     </div>
 
                     {/* =======================
-                   Profile Ranking 
-                ======================= */}
+                    Profile Ranking 
+                    ======================= */}
                     <div
                         style={{
                             position: "absolute",
@@ -1444,253 +1277,65 @@ export default function TopCompanyPage() {
 
                         }}
                     >
-
-                        {company?.applicantIds
-                            ?.map((applicantId) =>
-                                mockApplicants.find((a) => a.applicantId === applicantId)
-                            )
-                            ?.filter(Boolean) // remove undefined
-                            .map((applicant) => (
-                                <div
-                                    key={applicant!.applicantId}
-                                    className="flex-shrink-0" // prevents shrinking
-                                    style={{
-                                        transform: "scale(0.6)", // scale down to fit container
-                                        transformOrigin: "top left",
-                                        marginRight: "-120px", // tweak this to remove extra gap
-                                    }}
-                                >
-                                    <ApplicantCard
-                                        applicant={applicant!}
-                                        onClick={() => console.log(applicant!.applicantId)}
-                                    />
-                                </div>
-                            ))}
-                    </div>
-
-
-
-                    {/* =======================
-                        Documents
-                ======================= */}
-                    <div
-                        style={{
-                            position: "absolute",
-                            width: "329px",
-                            height: "535.33px",
-                            left: "605px",
-                            top: "450px",
-                            background: "#FFFFFF",
-                            boxShadow:
-                                "0px 0px 2px rgba(145, 158, 171, 0.2), 0px 12px 24px -4px rgba(145, 158, 171, 0.12)",
-                            borderRadius: "24px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            padding: "24px",
-                            boxSizing: "border-box",
-                        }}
-                    >
-                        <div style={{ width: "100%", maxWidth: "420px" }}>
-                            {/* Upload Box */}
+                        {loading ? (
                             <div
-                                onClick={() => document.getElementById("file-input")?.click()}
-                                onDragOver={(e) => {
-                                    e.preventDefault();
-                                    setDragging(true);
-                                }}
-                                onDragLeave={() => setDragging(false)}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    setDragging(false);
-                                    handleFiles(Array.from(e.dataTransfer.files));
-                                }}
                                 style={{
-                                    height: "130px",
-                                    borderRadius: "16px",
-                                    background: dragging ? "#FFF7CC" : "#F5F5F5",
+                                    flex: 1,
                                     display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "center",
                                     alignItems: "center",
-                                    cursor: "pointer",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
                                 }}
                             >
-                                <input
-                                    id="file-input"
-                                    type="file"
-                                    multiple
-                                    accept="image/*,application/pdf"
-                                    style={{ display: "none" }}
-                                    onChange={(e) =>
-                                        e.target.files && handleFiles(Array.from(e.target.files))
-                                    }
-                                />
-
-                                <img
-                                    src="/illustrations/upload.svg"
-                                    alt="Upload"
-                                    style={{ width: "90px", pointerEvents: "none" }}
-                                />
-
-                                <div style={{ fontWeight: 600, marginTop: "8px" }}>
-                                    Drop or select files
-                                </div>
+                                Loading employees...
                             </div>
-
-                            {/* Clear All */}
-                            {files.length > 0 && (
-                                <button
-                                    onClick={clearAll}
-                                    style={{
-                                        marginTop: "12px",
-                                        background: "none",
-                                        border: "none",
-                                        color: "#D32F2F",
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    Clear all
-                                </button>
-                            )}
-
-                            {/* File List */}
-                            <div
-                                style={{
-                                    marginTop: "16px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "12px",
-                                    overflowY: "auto",           // enable vertical scroll
-                                    maxHeight: "300px",           // adjust according to your container
-                                    width: "100%",                // fill parent width
-                                    paddingRight: "4px",          // optional: for scrollbar space
-                                }}
-                            >
-                                {files.map((item, index) => (
+                        ) : company?.employees && company.employees.length > 0 ? (
+                            company.employees.slice(0, 6).map((employee) => {
+                                const student = employee.student;
+                                return (
                                     <div
-                                        key={index}
+                                        key={student?.id || employee.id}
+                                        className="flex-shrink-0"
                                         style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "12px",
-                                            padding: "12px",
-                                            borderRadius: "12px",
-
+                                            transform: "scale(0.6)",
+                                            transformOrigin: "top left",
+                                            marginRight: "-120px",
                                         }}
                                     >
-                                        {/* Preview */}
-                                        {item.preview ? (
-                                            <img
-                                                src={item.preview}
-                                                style={{
-                                                    width: "48px",
-                                                    height: "48px",
-                                                    objectFit: "cover",
-                                                    borderRadius: "8px",
-                                                }}
-                                            />
-                                        ) : (
-                                            <div
-                                                style={{
-                                                    width: "48px",
-                                                    height: "48px",
-                                                    borderRadius: "8px",
-                                                    background: "#D32F2F",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    fontWeight: 700,
-                                                }}
-                                            >
-                                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M19.2895 24.2922H9.66699V25.5217C9.66699 25.9801 9.84904 26.4196 10.1731 26.7437C10.4972 27.0678 10.9367 27.2499 11.395 27.25H24.439C24.8973 27.2499 25.3368 27.0679 25.6608 26.7438C25.9848 26.4198 26.1669 25.9803 26.167 25.522V10.8123L20.1045 4.75H11.395C10.9367 4.75 10.4972 4.93206 10.1731 5.25612C9.84905 5.58018 9.66699 6.01971 9.66699 6.478V15.3322H19.2895C19.5056 15.3322 19.7129 15.4181 19.8658 15.571C20.0186 15.7238 20.1045 15.9311 20.1045 16.1472V23.4772C20.1044 23.6934 20.0185 23.9006 19.8657 24.0535C19.7129 24.2063 19.5056 24.2922 19.2895 24.2922Z" fill="#EAEAE4" />
-                                                    <path d="M26.167 10.8123L20.1045 4.75V9.08425C20.1046 9.54252 20.2866 9.98201 20.6107 10.3061C20.9347 10.6301 21.3742 10.8122 21.8325 10.8123H26.167Z" fill="#BABAB9" />
-                                                    <path d="M19.2895 15.332H6.64703C6.19692 15.332 5.83203 15.6969 5.83203 16.147V23.477C5.83203 23.9271 6.19692 24.292 6.64703 24.292H19.2895C19.7396 24.292 20.1045 23.9271 20.1045 23.477V16.147C20.1045 15.6969 19.7396 15.332 19.2895 15.332Z" fill="#F24646" />
-                                                    <path d="M9.20891 20.4443C9.99091 20.4443 10.5684 19.9405 10.5684 19.2265C10.5684 18.5125 9.99091 18.0088 9.20891 18.0088H7.58691V21.615H8.35866V20.4443H9.20891ZM8.35891 18.7175H9.12416C9.50741 18.7175 9.76966 18.9175 9.76966 19.2265C9.76966 19.5355 9.50741 19.7358 9.12416 19.7358H8.35866L8.35891 18.7175Z" fill="#FFFCEE" />
-                                                    <path d="M14.7102 19.8098C14.7102 18.7548 13.8495 18.0098 12.637 18.0098H11.3457V21.6155H12.637C13.849 21.6155 14.7102 20.8648 14.7102 19.8098ZM12.7367 20.9123H12.1172V18.7123H12.7367C12.8871 18.7026 13.0378 18.724 13.1796 18.7749C13.3214 18.8258 13.4513 18.9053 13.5612 19.0084C13.6711 19.1114 13.7587 19.236 13.8186 19.3742C13.8785 19.5125 13.9093 19.6616 13.9093 19.8123C13.9093 19.9629 13.8785 20.112 13.8186 20.2503C13.7587 20.3886 13.6711 20.5131 13.5612 20.6162C13.4513 20.7193 13.3214 20.7987 13.1796 20.8497C13.0378 20.9006 12.8871 20.9219 12.7367 20.9123Z" fill="#FFFCEE" />
-                                                    <path d="M18.349 18.707V18.0088H15.5723V21.615H16.349V20.1873H18.16V19.489H16.349V18.707H18.349Z" fill="#FFFCEE" />
-                                                </svg>
-                                            </div>
-                                        )}
-
-                                        {/* Info */}
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontWeight: 600 }}>
-                                                {item.file.name.length > 15
-                                                    ? item.file.name.slice(0, 15) + "..."
-                                                    : item.file.name}
-                                            </div>
-                                            <div style={{ fontSize: "12px", color: "rgba(23,23,23,0.48)" }}>
-                                                {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                                            </div>
-
-                                            {/* Progress */}
-                                            <div
-                                                style={{
-                                                    height: "6px",
-                                                    background: "#E0E0E0",
-                                                    borderRadius: "4px",
-                                                    marginTop: "6px",
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        width: `${item.progress}%`,
-                                                        height: "100%",
-                                                        background: item.error
-                                                            ? "#D32F2F"
-                                                            : item.uploading
-                                                                ? "#FFAB00"
-                                                                : "#00C853",
-                                                    }}
-                                                />
-                                            </div>
-
-                                            {item.error && (
-                                                <div style={{ color: "#D32F2F", fontSize: "12px" }}>
-                                                    {item.error}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                            {item.error && (
-                                                <button
-                                                    onClick={() => simulateUpload(index)}
-                                                    style={{
-                                                        border: "none",
-                                                        background: "#FFAB00",
-                                                        borderRadius: "6px",
-                                                        padding: "4px 8px",
-                                                        cursor: "pointer",
-                                                    }}
-                                                >
-                                                    Retry
-                                                </button>
-                                            )}
-
-                                            <button
-                                                onClick={() => removeFile(index)}
-                                                style={{
-                                                    border: "none",
-                                                    background: "#D32F2F",
-                                                    color: "#FFF",
-                                                    borderRadius: "55px",
-                                                    padding: "5px 10px",
-                                                    cursor: "pointer",
-                                                }}
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
+                                        <ApplicantCard
+                                            applicant={{
+                                                applicantId: student?.id || employee.id,
+                                                contractTitle: employee.contractTitle,
+                                                student: {
+                                                    id: student?.id || employee.id,
+                                                    name: student?.name || "Employee",
+                                                    image: student?.image,
+                                                }
+                                            }}
+                                        />
                                     </div>
-                                ))}
+                                );
+                            })
+                        ) : (
+                            <div
+                                style={{
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
+                                }}
+                            >
+                                No employees assigned to this company yet
                             </div>
-                        </div>
+                        )}
                     </div>
-
 
                     {/* =======================
                     Review CARD
@@ -1733,7 +1378,23 @@ export default function TopCompanyPage() {
                                 gap: "12px",
                             }}
                         >
-                            {reviews.map((review) => (
+                             {reviews.length === 0 ? (
+                            <div
+                                style={{
+                                flex: 1,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#919EAB",
+                                fontSize: "14px",
+                                textAlign: "center",
+                                padding: "24px",
+                                }}
+                            >
+                                No reviews available
+                            </div>
+                            ) : (
+                            reviews.map((review) => (
                                 <div
                                     key={review.id}
                                     style={{
@@ -1801,7 +1462,7 @@ export default function TopCompanyPage() {
                                     {/* Review Text */}
                                     <div style={{ fontSize: "13px", color: "#333" }}>{review.review}</div>
                                 </div>
-                            ))}
+                            )))}
 
                         </div>
                     </div>
@@ -2177,7 +1838,23 @@ export default function TopCompanyPage() {
                                 gap: "12px",
                             }}
                         >
-                            {reviews.map((review) => (
+                             {reviews.length === 0 ? (
+                            <div
+                                style={{
+                                flex: 1,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#919EAB",
+                                fontSize: "14px",
+                                textAlign: "center",
+                                padding: "24px",
+                                }}
+                            >
+                                No reviews available
+                            </div>
+                            ) : (
+                            reviews.map((review) => (
                                 <div
                                     key={review.id}
                                     style={{
@@ -2245,226 +1922,11 @@ export default function TopCompanyPage() {
                                     {/* Review Text */}
                                     <div style={{ fontSize: "13px", color: "#333" }}>{review.review}</div>
                                 </div>
-                            ))}
+                            )))}
 
                         </div>
                     </div>
-                    {/* =======================
-                            Documents
-                    ======================= */}
-                    <div
-                        style={{
-                            height: "520px",
-                            background: "#FFFFFF",
-                            boxShadow:
-                                "0px 0px 2px rgba(145, 158, 171, 0.2), 0px 12px 24px -4px rgba(145, 158, 171, 0.12)",
-                            borderRadius: "24px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            padding: "24px",
-                            boxSizing: "border-box",
-                        }}
-                    >
-                        <div style={{ width: "100%", maxWidth: "420px" }}>
-                            {/* Upload Box */}
-                            <div
-                                onClick={() => document.getElementById("file-input")?.click()}
-                                onDragOver={(e) => {
-                                    e.preventDefault();
-                                    setDragging(true);
-                                }}
-                                onDragLeave={() => setDragging(false)}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    setDragging(false);
-                                    handleFiles(Array.from(e.dataTransfer.files));
-                                }}
-                                style={{
-                                    height: "130px",
-                                    borderRadius: "16px",
-                                    background: dragging ? "#FFF7CC" : "#F5F5F5",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                <input
-                                    id="file-input"
-                                    type="file"
-                                    multiple
-                                    accept="image/*,application/pdf"
-                                    style={{ display: "none" }}
-                                    onChange={(e) =>
-                                        e.target.files && handleFiles(Array.from(e.target.files))
-                                    }
-                                />
 
-                                <img
-                                    src="/illustrations/upload.svg"
-                                    alt="Upload"
-                                    style={{ width: "90px", pointerEvents: "none" }}
-                                />
-
-                                <div style={{ fontWeight: 600, marginTop: "8px" }}>
-                                    Drop or select files
-                                </div>
-                            </div>
-
-                            {/* Clear All */}
-                            {files.length > 0 && (
-                                <button
-                                    onClick={clearAll}
-                                    style={{
-                                        marginTop: "12px",
-                                        background: "none",
-                                        border: "none",
-                                        color: "#D32F2F",
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    Clear all
-                                </button>
-                            )}
-
-                            {/* File List */}
-                            <div
-                                style={{
-                                    marginTop: "16px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "12px",
-                                    overflowY: "auto",           // enable vertical scroll
-                                    maxHeight: "300px",           // adjust according to your container
-                                    width: "100%",                // fill parent width
-                                    paddingRight: "4px",          // optional: for scrollbar space
-                                }}
-                            >
-                                {files.map((item, index) => (
-                                    <div
-                                        key={index}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "12px",
-                                            padding: "12px",
-                                            borderRadius: "12px",
-
-                                        }}
-                                    >
-                                        {/* Preview */}
-                                        {item.preview ? (
-                                            <img
-                                                src={item.preview}
-                                                style={{
-                                                    width: "48px",
-                                                    height: "48px",
-                                                    objectFit: "cover",
-                                                    borderRadius: "8px",
-                                                }}
-                                            />
-                                        ) : (
-                                            <div
-                                                style={{
-                                                    width: "48px",
-                                                    height: "48px",
-                                                    borderRadius: "8px",
-                                                    background: "#D32F2F",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    fontWeight: 700,
-                                                }}
-                                            >
-                                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M19.2895 24.2922H9.66699V25.5217C9.66699 25.9801 9.84904 26.4196 10.1731 26.7437C10.4972 27.0678 10.9367 27.2499 11.395 27.25H24.439C24.8973 27.2499 25.3368 27.0679 25.6608 26.7438C25.9848 26.4198 26.1669 25.9803 26.167 25.522V10.8123L20.1045 4.75H11.395C10.9367 4.75 10.4972 4.93206 10.1731 5.25612C9.84905 5.58018 9.66699 6.01971 9.66699 6.478V15.3322H19.2895C19.5056 15.3322 19.7129 15.4181 19.8658 15.571C20.0186 15.7238 20.1045 15.9311 20.1045 16.1472V23.4772C20.1044 23.6934 20.0185 23.9006 19.8657 24.0535C19.7129 24.2063 19.5056 24.2922 19.2895 24.2922Z" fill="#EAEAE4" />
-                                                    <path d="M26.167 10.8123L20.1045 4.75V9.08425C20.1046 9.54252 20.2866 9.98201 20.6107 10.3061C20.9347 10.6301 21.3742 10.8122 21.8325 10.8123H26.167Z" fill="#BABAB9" />
-                                                    <path d="M19.2895 15.332H6.64703C6.19692 15.332 5.83203 15.6969 5.83203 16.147V23.477C5.83203 23.9271 6.19692 24.292 6.64703 24.292H19.2895C19.7396 24.292 20.1045 23.9271 20.1045 23.477V16.147C20.1045 15.6969 19.7396 15.332 19.2895 15.332Z" fill="#F24646" />
-                                                    <path d="M9.20891 20.4443C9.99091 20.4443 10.5684 19.9405 10.5684 19.2265C10.5684 18.5125 9.99091 18.0088 9.20891 18.0088H7.58691V21.615H8.35866V20.4443H9.20891ZM8.35891 18.7175H9.12416C9.50741 18.7175 9.76966 18.9175 9.76966 19.2265C9.76966 19.5355 9.50741 19.7358 9.12416 19.7358H8.35866L8.35891 18.7175Z" fill="#FFFCEE" />
-                                                    <path d="M14.7102 19.8098C14.7102 18.7548 13.8495 18.0098 12.637 18.0098H11.3457V21.6155H12.637C13.849 21.6155 14.7102 20.8648 14.7102 19.8098ZM12.7367 20.9123H12.1172V18.7123H12.7367C12.8871 18.7026 13.0378 18.724 13.1796 18.7749C13.3214 18.8258 13.4513 18.9053 13.5612 19.0084C13.6711 19.1114 13.7587 19.236 13.8186 19.3742C13.8785 19.5125 13.9093 19.6616 13.9093 19.8123C13.9093 19.9629 13.8785 20.112 13.8186 20.2503C13.7587 20.3886 13.6711 20.5131 13.5612 20.6162C13.4513 20.7193 13.3214 20.7987 13.1796 20.8497C13.0378 20.9006 12.8871 20.9219 12.7367 20.9123Z" fill="#FFFCEE" />
-                                                    <path d="M18.349 18.707V18.0088H15.5723V21.615H16.349V20.1873H18.16V19.489H16.349V18.707H18.349Z" fill="#FFFCEE" />
-                                                </svg>
-                                            </div>
-                                        )}
-
-                                        {/* Info */}
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontWeight: 600 }}>
-                                                {item.file.name.length > 15
-                                                    ? item.file.name.slice(0, 15) + "..."
-                                                    : item.file.name}
-                                            </div>
-                                            <div style={{ fontSize: "12px", color: "rgba(23,23,23,0.48)" }}>
-                                                {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                                            </div>
-
-                                            {/* Progress */}
-                                            <div
-                                                style={{
-                                                    height: "6px",
-                                                    background: "#E0E0E0",
-                                                    borderRadius: "4px",
-                                                    marginTop: "6px",
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        width: `${item.progress}%`,
-                                                        height: "100%",
-                                                        background: item.error
-                                                            ? "#D32F2F"
-                                                            : item.uploading
-                                                                ? "#FFAB00"
-                                                                : "#00C853",
-                                                    }}
-                                                />
-                                            </div>
-
-                                            {item.error && (
-                                                <div style={{ color: "#D32F2F", fontSize: "12px" }}>
-                                                    {item.error}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                            {item.error && (
-                                                <button
-                                                    onClick={() => simulateUpload(index)}
-                                                    style={{
-                                                        border: "none",
-                                                        background: "#FFAB00",
-                                                        borderRadius: "6px",
-                                                        padding: "4px 8px",
-                                                        cursor: "pointer",
-                                                    }}
-                                                >
-                                                    Retry
-                                                </button>
-                                            )}
-
-                                            <button
-                                                onClick={() => removeFile(index)}
-                                                style={{
-                                                    border: "none",
-                                                    background: "#D32F2F",
-                                                    color: "#FFF",
-                                                    borderRadius: "55px",
-                                                    padding: "5px 10px",
-                                                    cursor: "pointer",
-                                                }}
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
                     {/* =======================
                         Current Employee
                         ======================= */}
@@ -2479,28 +1941,64 @@ export default function TopCompanyPage() {
                             padding: "16px", // optional
                         }}
                     >
-
-                        {company?.applicantIds
-                            ?.map((applicantId) =>
-                                mockApplicants.find((a) => a.applicantId === applicantId)
-                            )
-                            ?.filter(Boolean) // remove undefined
-                            .map((applicant) => (
-                                <div
-                                    key={applicant!.applicantId}
-                                    className="flex-shrink-0" // prevents shrinking
-                                    style={{
-                                        transform: "scale(0.6)", // scale down to fit container
-                                        transformOrigin: "top left",
-                                        marginRight: "-120px", // tweak this to remove extra gap
-                                    }}
-                                >
-                                    <ApplicantCard
-                                        applicant={applicant!}
-                                        onClick={() => console.log(applicant!.applicantId)}
-                                    />
-                                </div>
-                            ))}
+                        {loading ? (
+                            <div
+                                style={{
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
+                                }}
+                            >
+                                Loading employees...
+                            </div>
+                        ) : company?.employees && company.employees.length > 0 ? (
+                            company.employees.slice(0, 6).map((employee) => {
+                                const student = employee.student;
+                                return (
+                                    <div
+                                        key={student?.id || employee.id}
+                                        className="flex-shrink-0"
+                                        style={{
+                                            transform: "scale(0.6)",
+                                            transformOrigin: "top left",
+                                            marginRight: "-120px",
+                                        }}
+                                    >
+                                        <ApplicantCard
+                                            applicant={{
+                                                applicantId: student?.id || employee.id,
+                                                contractTitle: employee.contractTitle,
+                                                student: {
+                                                    id: student?.id || employee.id,
+                                                    name: student?.name || "Employee",
+                                                    image: student?.image,
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div
+                                style={{
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#919EAB",
+                                    fontSize: "14px",
+                                    textAlign: "center",
+                                    padding: "24px",
+                                }}
+                            >
+                                No employees assigned to this company yet
+                            </div>
+                        )}
                     </div>
                     {/* =======================
                     END MOBILE LAYOUT

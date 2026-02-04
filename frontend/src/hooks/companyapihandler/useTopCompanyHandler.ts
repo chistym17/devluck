@@ -39,7 +39,18 @@ export interface TopCompanyDetail extends TopCompany {
   profileRanking?: number | null
   progress?: number | null
   corporate?: string | null
-  applicantIds?: string[]
+  employees?: Array<{
+    id: string
+    contractTitle: string
+    status: string
+    contractNumber: string
+    student: {
+      id: string
+      name: string
+      email: string
+      image?: string | null
+    }
+  }>
   programs?: Array<{
     id: string
     name: string

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useStudentProfileHandler } from "@/src/hooks/studentapihandler/useStudentProfileHandler";
 import { useStudentOpportunityHandler } from "@/src/hooks/studentapihandler/useStudentOpportunityHandler";
 import { useStudentDashboardHandler } from "@/src/hooks/studentapihandler/useStudentDashboardHandler";
-import { useStudentApplicationHandler } from "@/src/hooks/studentapihandler/useStudentApplicationHandler";
 import { useEffect, useMemo } from "react";
 
 interface Card1Contract {
@@ -231,12 +230,6 @@ export default function DashboardPage() {
     getDashboardStats,
   } = useStudentDashboardHandler();
 
-  const {
-    applications,
-    loading: applicationsLoading,
-    getApplications,
-  } = useStudentApplicationHandler();
-
   const router = useRouter();
 
   useEffect(() => {
@@ -248,15 +241,14 @@ export default function DashboardPage() {
           getEducations(),
           getSkills(),
           listOpportunities(1, 4),
-          getDashboardStats(),
-          getApplications(1, 10, 'accepted')
+          getDashboardStats()
         ]);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       }
     };
     fetchData();
-  }, [getProfile, getExperiences, getEducations, getSkills, listOpportunities, getDashboardStats, getApplications]);
+  }, [getProfile, getExperiences, getEducations, getSkills, listOpportunities, getDashboardStats]);
 
   const mappedOpportunities = useMemo(() => {
     if (!opportunities || !Array.isArray(opportunities)) {
@@ -289,35 +281,10 @@ export default function DashboardPage() {
     }));
   }, [opportunities]);
 
-  const upcomingInterviews = useMemo(() => {
-    if (!applications || !Array.isArray(applications)) {
-      return [];
-    }
-    return applications
-      .filter(app => app.status === 'accepted' && app.opportunity)
-      .map((app) => {
-        const opp = app.opportunity;
-        return {
-          id: opp.id,
-          applicationId: app.id,
-          contractTitle: opp.title,
-          company: opp.company?.name || "Unknown Company",
-          companyLogo: opp.company?.logo,
-          salary: opp.allowance ? `${opp.currency} ${opp.allowance}` : "Not specified",
-          workProgress: 100,
-          opportunityStatus: "Upcoming Interview" as const,
-          startDate: opp.startDate ? new Date(opp.startDate).toLocaleDateString() : "Not specified",
-          location: opp.location || "Not specified",
-          type: opp.type || "Full-time",
-          appliedAt: app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : "Not specified",
-        };
-      });
-  }, [applications]);
-
   const totalOpportunities = stats?.totalOpportunities ?? 0;
   const totalApplied = stats?.totalApplied ?? 0;
   const totalRejected = stats?.totalRejected ?? 0;
-  const upcomingInterviewsCount = upcomingInterviews.length;
+  const upcomingInterviews = 0;
 
   const isLoading =
   profileLoading ||
@@ -325,8 +292,7 @@ export default function DashboardPage() {
   educationLoading ||
   skillsLoading ||
   opportunitiesLoading ||
-  statsLoading ||
-  applicationsLoading;
+  statsLoading;
 
   if (isLoading) {
     return (
@@ -474,7 +440,7 @@ export default function DashboardPage() {
           ">
             <Card title="All Opportunity" value={totalOpportunities.toString()} />
             <Card title="Total Applied" value={totalApplied.toString()} />
-            <Card title="Upcoming Interview" value={upcomingInterviewsCount.toString()} />
+            <Card title="Upcoming Interview" value={upcomingInterviews.toString()} />
             <Card title="Total Rejected" value={totalRejected.toString()} />
           </div>
         </div>
@@ -643,69 +609,20 @@ export default function DashboardPage() {
                       </div>
             
             
-                      {/* Upcoming Interview Card */}
+                      {/* Portfolio Card */}
                       <div className="w-full sm:max-w-[360px] sm:min-w-[340px] h-auto relative">
                         <div className="flex items-center justify-between mb-6">
                           <h3 className="font-barlow font-bold text-[24px] text-[#1E1E1E]">
                           Upcoming Interview
                           </h3>
+            
+                          
                         </div>
                         <div className={`w-full sm:max-w-[360px] sm:min-w-[340px] bg-white shadow-[0_4px_12px_rgba(145,158,171,0.3),0_0_4px_rgba(145,158,171,0.2)] transform -skew-x-12 rounded-[24px] flex flex-col items-start justify-start p-6 overflow-hidden transition-all duration-300 max-h-[250px]`}>
                           <div className="transform skew-x-12 px-8 w-full flex flex-col gap-3 overflow-y-auto">
-                            {applicationsLoading ? (
-                              <p className="text-[#555] font-publicSans py-4">Loading interviews...</p>
-                            ) : upcomingInterviews.length > 0 ? (
-                              upcomingInterviews.map((interview) => (
-                                <div 
-                                  key={interview.id} 
-                                  className="px-4 py-2 w-full cursor-pointer hover:bg-gray-50 rounded-lg transition-colors"
-                                  onClick={() => router.push(`/Student/dashboard/${interview.id}`)}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <rect x="7.89111" width="11.16" height="11.16" transform="rotate(45 7.89111 0)" fill="#FFEB9C"/>
-                                      </svg>
-                                      <h4 className="font-publicSans font-semibold text-[14px] text-[#1E1E1E] transform-none">
-                                        {interview.contractTitle}
-                                      </h4>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[12px] text-[#555] transform-none mt-1">
-                                    <span className="font-publicSans">{interview.company}</span>
-                                    <svg
-                                      width="8"
-                                      height="8"
-                                      viewBox="0 0 8 8"
-                                      fill="none"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="transform rotate-45"
-                                    >
-                                      <rect x="3.53564" width="5" height="5" fill="black" />
-                                    </svg>
-                                    <span className="font-publicSans">{interview.location}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[12px] text-[#1E1E1E] transform-none mt-1">
-                                    <span className="font-publicSans font-medium">Start: {interview.startDate}</span>
-                                    <svg
-                                      width="8"
-                                      height="8"
-                                      viewBox="0 0 8 8"
-                                      fill="none"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="transform rotate-45"
-                                    >
-                                      <rect x="3.53564" width="5" height="5" fill="black" />
-                                    </svg>
-                                    <span className="font-publicSans">{interview.salary}</span>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-[#555] font-publicSans py-4">
-                                No upcoming interviews.
-                              </p>
-                            )}
+                            <p className="text-[#555] font-publicSans py-4">
+                              No upcoming interviews.
+                            </p>
                           </div>
                         </div>
                       </div>

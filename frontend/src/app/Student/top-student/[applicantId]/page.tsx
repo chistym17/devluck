@@ -18,8 +18,8 @@ export default function ApplicantPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="text-lg text-gray-600">Loading student details...</div>
+        <div className="flex h-screen items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
         </div>
       </DashboardLayout>
     );
@@ -112,15 +112,20 @@ export default function ApplicantPage() {
 
               <div className="relative w-[260px] sm:w-[260px] h-[175px]">
                 {/* Background number or placeholder */}
-                <div className="font-barlow font-extrabold text-[200px] leading-[175px] text-[#C2C2C2] flex  w-[200px] sm:w-[260px] h-[175px]">
-                  {applicant?.profileRanking || "N/A"}
+                <div
+                  className={`font-barlow font-extrabold leading-[175px] text-[#C2C2C2] flex w-[200px] sm:w-[260px] h-[175px]
+                    ${applicant?.profileRanking ? "text-[200px]" : "text-[100px] leading-[175px] text-center justify-center items-center"}
+                  `}
+                >
+                  {applicant?.profileRanking ?? "N/A"}
                 </div>
 
                 {/* Profile Ranking label */}
-                <h4 className="absolute left-[70px] top-[85px] font-publicSans font-bold text-[24px] leading-[36px] text-[#1E1E1E] flex ">
-                  Profile Ranking 
+                <h4 className="absolute left-[70px] top-[85px] font-publicSans font-bold text-[24px] leading-[36px] text-[#1E1E1E]">
+                  Profile Ranking
                 </h4>
               </div>
+              
               <div className=" justify-between items-center w-[300px] h-[81px] p-[16px] flex flex-col ">
                 {/* Profile Progress Label */}
                 <div className="flex flex-row justify-between items-center w-[200px] sm:w-[260px] h-[19px]">

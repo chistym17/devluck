@@ -191,10 +191,11 @@ type ContractRowProps = {
   onSideClick?: () => void;
   onDelete?: () => void;
   showCheckbox?: boolean;
+  isSelected: boolean; // ✅ ADD THIS
+  onSelect: (id: string, checked: boolean) => void;
 };
 
-const ContractRow = ({ payment, onSideClick, onDelete, showCheckbox = false }: ContractRowProps) => {
-  const [checked, setChecked] = useState(false);
+const ContractRow = ({ payment, onSideClick, onDelete, showCheckbox = false, isSelected, onSelect }: ContractRowProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -227,11 +228,11 @@ const ContractRow = ({ payment, onSideClick, onDelete, showCheckbox = false }: C
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
             onClick={(e) => {
-              e.stopPropagation(); // 🔥 prevent row click
-              setChecked((prev) => !prev);
+              e.stopPropagation();
+              onSelect(payment.id!, !isSelected);
             }}
           >
-            {checked ? (
+            {isSelected ? (
               /* ✅ SELECTED SVG */
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path
@@ -373,6 +374,14 @@ const ContractRow = ({ payment, onSideClick, onDelete, showCheckbox = false }: C
 };
 const ITEMS_PER_PAGE = 6;
 export default function ApplicantPage() {
+
+  const [bulkDelete, setBulkDelete] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const handleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
+  };
 
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -1182,6 +1191,34 @@ export default function ApplicantPage() {
               </div>
             </div>
 
+            {selectedIds.length > 0 && (
+              <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+                <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                  
+                  {/* Unskew content */}
+                  <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                    <span className="text-sm font-semibold">
+                      {selectedIds.length} selected
+                    </span>
+
+                    <button
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg]"
+                      onClick={() => {
+                        setBulkDelete(true);
+                        setDeleteConfirmOpen(true);
+                      }}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]">
+                        Delete Selected
+                      </span>
+                    </button>
+
+                  </div>
+
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2 mt-4">
               {paymentsLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -1197,8 +1234,11 @@ export default function ApplicantPage() {
                 key={index}
                 payment={payment}
                 showCheckbox={true}
+                isSelected={selectedIds.includes(payment.id!)}
+                onSelect={handleSelect}
                 onDelete={() => {
-                  setPaymentToDelete(payment.id);
+                  setSelectedIds(prev => prev.filter(id => id !== payment.id));
+                  setPaymentToDelete(payment.id ?? null);
                   setDeleteConfirmOpen(true);
                 }}
               />
@@ -1305,19 +1345,32 @@ export default function ApplicantPage() {
             onClick={() => {
               setDeleteConfirmOpen(false);
               setPaymentToDelete(null);
+              setBulkDelete(false);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors skew-x-[-12deg]"
             disabled={deleting}
           >
-            Cancel
+            <span className=" flex items-center justify-center skew-x-[12deg]">
+              Cancel
+            </span>
           </button>
           <button
-            onClick={async () => {
-              if (!paymentToDelete) return;
+           onClick={async () => {
+              // If nothing selected, do nothing
+              if (!paymentToDelete && selectedIds.length === 0) return;
+
               setDeleting(true);
               try {
-                await deletePayment(paymentToDelete);
+                if (bulkDelete && selectedIds.length > 0) {
+                  // Bulk delete
+                  await Promise.all(selectedIds.map(id => deletePayment(id)));
+                  setSelectedIds([]);
+                } else if (paymentToDelete) {
+                  // Single delete
+                  await deletePayment(paymentToDelete);
+                }
 
+                // Refresh payments and stats
                 if (contract) {
                   const contractUuid = contract.id;
                   const [paymentsResponse, statsResponse] = await Promise.all([
@@ -1335,25 +1388,31 @@ export default function ApplicantPage() {
                   }
                 }
 
+                // Reset modal state
                 setDeleteConfirmOpen(false);
                 setPaymentToDelete(null);
+                setBulkDelete(false);
 
-                // ✅ Show success toast
-                showToast("Payment deleted successfully!", "success");
+                // Show success toast
+                const count = bulkDelete ? selectedIds.length : 1;
+                showToast(`${count} payment${count > 1 ? "s" : ""} deleted successfully!`, "success");
+
               } catch (error) {
-                console.error("Failed to delete payment:", error);
+                console.error("Failed to delete payment(s):", error);
 
-                // ✅ Show error toast
-                showToast("Failed to delete payment. Please try again.", "error");
+                // Show error toast
+                showToast("Failed to delete payment(s). Please try again.", "error");
               } finally {
                 setDeleting(false);
               }
             }}
 
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed skew-x-[-12deg]"
             disabled={deleting}
           >
+            <span className=" flex items-center justify-center skew-x-[12deg]">
             {deleting ? "Deleting..." : "Delete"}
+            </span>
           </button>
         </div>
       </div>

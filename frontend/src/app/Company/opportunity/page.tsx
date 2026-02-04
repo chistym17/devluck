@@ -301,17 +301,17 @@ type ContractRowProps = {
   job: JobData;
   onMainClick?: () => void;
   onSideClick?: () => void;
+  isSelected: boolean; // ✅ ADD THIS
+  onSelect: (id: string, checked: boolean) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   showCheckbox?: boolean;
 };
 
-const ContractRow = ({ job, onMainClick, onEdit, onDelete, showCheckbox = false }: ContractRowProps) => {
+const ContractRow = ({ job, onMainClick, onEdit, onDelete, showCheckbox = false,isSelected,onSelect }: ContractRowProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [checked, setChecked] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
-
 
   // Close when clicking outside
   useEffect(() => {
@@ -326,6 +326,7 @@ const ContractRow = ({ job, onMainClick, onEdit, onDelete, showCheckbox = false 
 
   return (
     <div className="flex w-full gap-4">
+
       {/* Main 80% section */}
       <div
         className="flex items-center w-9/10 skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg  bg-white cursor-pointer hover:bg-gray-50"
@@ -338,12 +339,12 @@ const ContractRow = ({ job, onMainClick, onEdit, onDelete, showCheckbox = false 
         {showCheckbox && (
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation(); // 🔥 prevent row click
-              setChecked((prev) => !prev);
+             onClick={(e) => {
+              e.stopPropagation();
+              onSelect(job.id!, !isSelected);
             }}
           >
-            {checked ? (
+            {isSelected ? (
               /* ✅ SELECTED SVG */
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path
@@ -539,6 +540,32 @@ const ContractRow = ({ job, onMainClick, onEdit, onDelete, showCheckbox = false 
    Main Opportunity Page Component
 ────────────────────────────────────────────── */
 export default function OpportunityPage() {
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const handleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    setDeleting(true);
+    try {
+      await Promise.all(selectedIds.map(id => deleteOpportunity(id)));
+      await listOpportunities(1, 1000);
+
+      setSelectedIds([]);
+      setToastMessage("Selected opportunities deleted successfully");
+      setToastType("success");
+      setToastVisible(true);
+    } catch {
+      setToastMessage("Failed to delete selected opportunities");
+      setToastType("error");
+      setToastVisible(true);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -868,6 +895,33 @@ export default function OpportunityPage() {
               </>
             )}
 
+           {selectedIds.length > 0 && !showApplicants && (
+              <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+                <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                  
+                  {/* Unskew content */}
+                  <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                    <span className="text-sm font-semibold">
+                      {selectedIds.length} selected
+                    </span>
+
+                    <button
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg]"
+                      onClick={() => {
+                        setopportunityToDelete(null);
+                        setDeleteConfirmOpen(true);
+                      }}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]"  >
+                      Delete Selected
+                      </span>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
             {/* Contracts Grid */}
             {!showApplicants && (
               <div className="flex flex-col ml-[45px] gap-2 mt-4">
@@ -886,15 +940,19 @@ export default function OpportunityPage() {
                       key={job.id || index}
                       job={job}
                       showCheckbox={true}
+                      isSelected={selectedIds.includes(job.id!)}
+                      onSelect={handleSelect}
                       onMainClick={() => router.push(`/Company/opportunity/${job.id || job.jobNumber}`)}
                       onEdit={() => {
                         setEditingOpportunity(job);
                         setIsModalOpen(true);
                       }}
                       onDelete={() => {
-                      setopportunityToDelete(job.id ?? null);
-                      setDeleteConfirmOpen(true);
-                    }}
+                        setSelectedIds(prev => prev.filter(id => id !== job.id));
+                        setopportunityToDelete(job.id ?? null);
+                        setDeleteConfirmOpen(true);
+                      }}
+
                     />
                   ))
                 )}
@@ -1004,28 +1062,38 @@ export default function OpportunityPage() {
           </button>
           <button
             onClick={async () => {
-              if (!opportunityToDelete) return;
               setDeleting(true);
               try {
-                await deleteOpportunity(opportunityToDelete);
-                await listOpportunities(1, 1000); // refresh list
+                // 🔥 BULK DELETE
+                if (selectedIds.length > 0) {
+                  await Promise.all(
+                    selectedIds.map(id => deleteOpportunity(id))
+                  );
+                  setSelectedIds([]);
+                  setToastMessage("Selected opportunities deleted successfully");
+                }
+                // 🔥 SINGLE DELETE
+                else if (opportunityToDelete) {
+                  await deleteOpportunity(opportunityToDelete);
+                  setToastMessage("Opportunity deleted successfully");
+                }
 
-                setToastMessage("Opportunity deleted successfully");
+                await listOpportunities(1, 1000);
+
                 setToastType("success");
                 setToastVisible(true);
-
                 setDeleteConfirmOpen(false);
                 setopportunityToDelete(null);
               } catch (error) {
-                console.error("Failed to delete opportunity:", error);
-                
-                setToastMessage("Failed to delete opportunity. Please try again.");
+                console.error("Delete failed:", error);
+                setToastMessage("Failed to delete opportunity");
                 setToastType("error");
                 setToastVisible(true);
               } finally {
                 setDeleting(false);
               }
             }}
+
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed skew-x-[-12deg]"
             disabled={deleting}
           >

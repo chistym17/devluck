@@ -429,12 +429,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             value={formData.contractId}
             onChange={(e) => handleInputChange("contractId", e.target.value)}
             />
-           <ParallelogramDatePicker
-            label="Payment Date"
-            placeholder="YYYY-MM-DD"
-            value={formData.nextPayment}
-            onChange={(val) => handleInputChange("nextPayment", val)}
-            />
             <ParallelogramInput
             label="Monthly Allowance"
             placeholder="Enter monthly allowance"
@@ -447,6 +441,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             value={formData.paymentStatus}
             options={["Paid", "Due", "Pending"]}
             onChange={(val) => handleInputChange("paymentStatus", val)}
+            />
+            <ParallelogramDatePicker
+            label="Payment Date"
+            placeholder="YYYY-MM-DD"
+            value={formData.nextPayment}
+            onChange={(val) => handleInputChange("nextPayment", val)}
             />
             <ParallelogramInput
             label="Note"

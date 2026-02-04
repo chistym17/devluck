@@ -45,9 +45,11 @@ export const listContractTemplates = async (req, res) => {
       }
     })
   } catch (error) {
+    console.error('❌ Error in listContractTemplates:', error)
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to list contract templates'
+      message: 'Failed to list contract templates',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }
@@ -97,9 +99,11 @@ export const createContractTemplate = async (req, res) => {
       data: template
     })
   } catch (error) {
+    console.error('❌ Error in createContractTemplate:', error)
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to create contract template'
+      message: 'Failed to create contract template',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }
@@ -135,9 +139,11 @@ export const getContractTemplateById = async (req, res) => {
       data: template
     })
   } catch (error) {
+    console.error('❌ Error in getContractTemplateById:', error)
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to get contract template'
+      message: 'Failed to get contract template',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }
@@ -200,9 +206,11 @@ export const updateContractTemplate = async (req, res) => {
       data: updatedTemplate
     })
   } catch (error) {
+    console.error('❌ Error in updateContractTemplate:', error)
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to update contract template'
+      message: 'Failed to update contract template',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }
@@ -242,9 +250,11 @@ export const deleteContractTemplate = async (req, res) => {
       message: 'Contract template deleted successfully'
     })
   } catch (error) {
+    console.error('❌ Error in deleteContractTemplate:', error)
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to delete contract template'
+      message: 'Failed to delete contract template',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }
@@ -254,54 +264,63 @@ export const getContractTemplateStats = async (req, res) => {
     const company = await requireCompany(req, res)
     if (!company) return
 
-    const where = {
-      companyId: company.id
+    // Single query: fetch all templates with only needed fields
+    const templates = await prisma.contractTemplate.findMany({
+      where: { companyId: company.id },
+      select: {
+        status: true,
+        createdAt: true
+      }
+    })
+
+    // Calculate stats in JavaScript (much faster than 8 DB queries)
+    const stats = {
+      total: templates.length,
+      active: 0,
+      inactive: 0,
+      draft: 0,
+      latestActive: null,
+      latestInactive: null,
+      latestDraft: null,
+      latest: null
     }
 
-    const [total, active, inactive, draft, latestActive, latestInactive, latestDraft, latest] = await Promise.all([
-      prisma.contractTemplate.count({ where }),
-      prisma.contractTemplate.count({ where: { ...where, status: 'Active' } }),
-      prisma.contractTemplate.count({ where: { ...where, status: 'Inactive' } }),
-      prisma.contractTemplate.count({ where: { ...where, status: 'Draft' } }),
-      prisma.contractTemplate.findFirst({
-        where: { ...where, status: 'Active' },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true }
-      }),
-      prisma.contractTemplate.findFirst({
-        where: { ...where, status: 'Inactive' },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true }
-      }),
-      prisma.contractTemplate.findFirst({
-        where: { ...where, status: 'Draft' },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true }
-      }),
-      prisma.contractTemplate.findFirst({
-        where,
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true }
-      })
-    ])
+    // Single pass through templates to calculate all stats
+    templates.forEach(template => {
+      // Count by status
+      if (template.status === 'Active') {
+        stats.active++
+        if (!stats.latestActive || template.createdAt > stats.latestActive) {
+          stats.latestActive = template.createdAt
+        }
+      } else if (template.status === 'Inactive') {
+        stats.inactive++
+        if (!stats.latestInactive || template.createdAt > stats.latestInactive) {
+          stats.latestInactive = template.createdAt
+        }
+      } else if (template.status === 'Draft') {
+        stats.draft++
+        if (!stats.latestDraft || template.createdAt > stats.latestDraft) {
+          stats.latestDraft = template.createdAt
+        }
+      }
+
+      // Track overall latest
+      if (!stats.latest || template.createdAt > stats.latest) {
+        stats.latest = template.createdAt
+      }
+    })
 
     return res.status(200).json({
       status: 'success',
-      data: {
-        total,
-        active,
-        inactive,
-        draft,
-        latestActive: latestActive?.createdAt || null,
-        latestInactive: latestInactive?.createdAt || null,
-        latestDraft: latestDraft?.createdAt || null,
-        latest: latest?.createdAt || null
-      }
+      data: stats
     })
   } catch (error) {
+    console.error('❌ Error in getContractTemplateStats:', error)
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to get contract template stats'
+      message: 'Failed to get contract template stats',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }

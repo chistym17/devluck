@@ -260,12 +260,13 @@ type ContractRowProps = {
   index?: number;
   onWithdraw?: () => void;
   isWithdrawing?: boolean;
+  isSelected: boolean; // ✅ ADD THIS
+  onSelect: (id: string, checked: boolean) => void;
 };
 
-const ContractRow = ({ contract,onMainClick,onWithdraw,isWithdrawing,onDisputeClick,showCheckbox = false, index = 0 }: ContractRowProps) => {
+const ContractRow = ({ contract,onMainClick,onWithdraw,isWithdrawing,onDisputeClick,showCheckbox = false, index = 0, isSelected, onSelect }: ContractRowProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [checked, setChecked] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
 
@@ -297,11 +298,11 @@ const ContractRow = ({ contract,onMainClick,onWithdraw,isWithdrawing,onDisputeCl
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
             onClick={(e) => {
-              e.stopPropagation(); // 🔥 prevent row click
-              setChecked((prev) => !prev);
+              e.stopPropagation();
+              onSelect(contract.originalId!, !isSelected);
             }}
           >
-            {checked ? (
+            {isSelected ? (
               /* ✅ SELECTED SVG */
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path
@@ -495,23 +496,46 @@ const ContractRow = ({ contract,onMainClick,onWithdraw,isWithdrawing,onDisputeCl
 
 export default function ContractListPage() {
 
+      const [bulkWithdraw, setBulkWithdraw] = useState(false);
+      const [selectedIds, setSelectedIds] = useState<string[]>([]);
+      const handleSelect = (id: string, checked: boolean) => {
+        setSelectedIds((prev) =>
+          checked ? [...prev, id] : prev.filter((x) => x !== id)
+        );
+      };
+
+      
+
       const [confirmOpen, setConfirmOpen] = useState(false);
       const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
       const [confirmType, setConfirmType] = useState<"withdraw" | "delete">("withdraw");
 
       const handleConfirmAction = async () => {
-        if (!selectedApplicationId) return;
-
         try {
-          if (confirmType === "withdraw") {
-            setWithdrawingApplicationId(selectedApplicationId);
-            await withdrawApplication(selectedApplicationId);
-            setToast({ message: "Application withdrawn successfully!", type: "success" });
+          if (bulkWithdraw && selectedIds.length > 0) {
+            // Bulk withdraw all selected IDs
+            setWithdrawingApplicationId("bulk"); // optional placeholder for loading state
+            await Promise.all(selectedIds.map(id => withdrawApplication(id)));
+            setToast({
+              message: `${selectedIds.length} applications withdrawn successfully!`,
+              type: "success",
+            });
+            setSelectedIds([]); // clear selection
           } else {
-            await deleteApplication(selectedApplicationId);
-            setToast({ message: "Application deleted successfully!", type: "success" });
+            // Single withdraw or delete
+            if (!selectedApplicationId) return;
+
+            if (confirmType === "withdraw") {
+              setWithdrawingApplicationId(selectedApplicationId);
+              await withdrawApplication(selectedApplicationId);
+              setToast({ message: "Application withdrawn successfully!", type: "success" });
+            } else {
+              await deleteApplication(selectedApplicationId);
+              setToast({ message: "Application deleted successfully!", type: "success" });
+            }
           }
 
+          // Refresh the applications list
           await getApplications(1, 1000);
         } catch (err: any) {
           setToast({
@@ -522,8 +546,10 @@ export default function ContractListPage() {
           setWithdrawingApplicationId(null);
           setConfirmOpen(false);
           setSelectedApplicationId(null);
+          setBulkWithdraw(false);
         }
       };
+
 
 
        const { 
@@ -861,6 +887,30 @@ return (
           </div>
         )}
 
+       {selectedIds.length > 0 && !showApplicants && !withdrawingApplicationId && (
+          <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+            <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+              <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                <span className="text-sm font-semibold">
+                  {selectedIds.length} selected
+                </span>
+
+                <button
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg]"
+                  onClick={() => {
+                    setBulkWithdraw(true);
+                    setConfirmOpen(true);
+                  }}
+                >
+                  <span className="flex items-center justify-center skew-x-[12deg]">
+                    Withdraw Selected
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* Contracts Grid */}
       {!showApplicants && !applicationsLoading && !applicationsError && filteredApplicants.length > 0 && (
@@ -876,10 +926,13 @@ return (
                 }
               }}
               onWithdraw={() => {
-                setSelectedApplicationId(contract.originalId);
+                setSelectedIds(prev => prev.filter(id => id !== contract.originalId));
+                setSelectedApplicationId(contract.originalId ?? null);
                 setConfirmType("withdraw");
                 setConfirmOpen(true);
               }}
+              isSelected={selectedIds.includes(contract.originalId!)}
+              onSelect={handleSelect}
               isWithdrawing={withdrawingApplicationId !== null}
               showCheckbox={true}
               index={(currentPage - 1) * itemsPerPage + index}

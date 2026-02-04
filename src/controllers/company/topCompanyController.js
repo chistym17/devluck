@@ -134,6 +134,27 @@ export const getTopCompanyById = async (req, res) => {
             name: true
           }
         },
+        contracts: {
+          where: {
+            studentId: {
+              not: null
+            }
+          },
+          select: {
+            id: true,
+            contractTitle: true,
+            status: true,
+            inContractNumber: true,
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true
+              }
+            }
+          }
+        },
         _count: {
           select: {
             contracts: true
@@ -158,13 +179,23 @@ export const getTopCompanyById = async (req, res) => {
     logger.info('get_top_company_by_id_success', { 
       companyId, 
       addressesCount: targetCompany.addresses?.length || 0,
-      programsCount: targetCompany.programs?.length || 0
+      programsCount: targetCompany.programs?.length || 0,
+      employeesCount: targetCompany.contracts?.length || 0
     })
+
+    const employees = targetCompany.contracts.map(contract => ({
+      id: contract.id,
+      contractTitle: contract.contractTitle,
+      status: contract.status,
+      contractNumber: contract.inContractNumber,
+      student: contract.student
+    }))
 
     return res.status(200).json({
       status: 'success',
       data: {
         ...targetCompany,
+        employees,
         opportunityCount
       }
     })

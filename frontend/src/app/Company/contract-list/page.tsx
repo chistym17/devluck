@@ -467,15 +467,16 @@ interface MappedContract {
 type ContractRowProps = {
   applicant: MappedContract;
   onMainClick?: () => void;
+  isSelected: boolean; // ✅ ADD THIS
+  onSelect: (id: string, checked: boolean) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   showCheckbox?: boolean;
 };
 
-const ContractRow = ({ applicant,onMainClick,onEdit,onDelete,showCheckbox = false }: ContractRowProps) => {
+const ContractRow = ({ applicant,onMainClick,onEdit,onDelete,showCheckbox = false,isSelected,onSelect }: ContractRowProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [checked, setChecked] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
 
@@ -506,11 +507,11 @@ const ContractRow = ({ applicant,onMainClick,onEdit,onDelete,showCheckbox = fals
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
             onClick={(e) => {
-              e.stopPropagation(); // 🔥 prevent row click
-              setChecked((prev) => !prev);
+              e.stopPropagation();
+              onSelect(applicant.id!, !isSelected);
             }}
           >
-            {checked ? (
+            {isSelected ? (
               /* ✅ SELECTED SVG */
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path
@@ -696,6 +697,14 @@ const ContractRow = ({ applicant,onMainClick,onEdit,onDelete,showCheckbox = fals
 
 
 export default function ContractListPage() {
+
+  const [bulkDelete, setBulkDelete] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const handleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
+  };
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -1081,6 +1090,34 @@ return (
             </>
           )}
 
+          {selectedIds.length > 0 && !showApplicants && (
+              <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+                <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                  
+                  {/* Unskew content */}
+                  <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                    <span className="text-sm font-semibold">
+                      {selectedIds.length} selected
+                    </span>
+
+                    <button
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg]"
+                      onClick={() => {
+                        setBulkDelete(true);
+                        setDeleteConfirmOpen(true);
+                      }}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]">
+                        Delete Selected
+                      </span>
+                    </button>
+
+                  </div>
+
+                </div>
+              </div>
+            )}
+
          {/* Contracts Grid */}
       {!showApplicants && (
         <div className="flex flex-col gap-2 mt-4">
@@ -1130,8 +1167,11 @@ return (
                     setIsModalOpen(true);
                   }
                 }}
+                isSelected={selectedIds.includes(applicant.id!)}
+                onSelect={handleSelect}
                 onDelete={() => {
-                  setContractToDelete(applicant.id);
+                  setSelectedIds(prev => prev.filter(id => id !== applicant.id));
+                  setContractToDelete(applicant.id ?? null);
                   setDeleteConfirmOpen(true);
                 }}
                 showCheckbox={true}
@@ -1218,32 +1258,46 @@ return (
       onClose={() => {
         setDeleteConfirmOpen(false);
         setContractToDelete(null);
+        setBulkDelete(false);
       }}
       onConfirm={async () => {
-        if (!contractToDelete) return;
         setDeleting(true);
         try {
-          await deleteContract(contractToDelete);
-          // Refresh both contract list and stats after deletion
-          const statusFilter = selectedContractStatus.length > 0 && !selectedContractStatus.includes("All") ? selectedContractStatus[0] : undefined;
+          if (bulkDelete) {
+            await Promise.all(selectedIds.map(id => deleteContract(id)));
+            setSelectedIds([]);
+            setBulkDelete(false);
+            setToastMessage("Selected contracts deleted successfully");
+          } else {
+            if (!contractToDelete) return;
+            await deleteContract(contractToDelete);
+            setToastMessage("Contract deleted successfully");
+          }
+
+          const statusFilter =
+            selectedContractStatus.length > 0 && !selectedContractStatus.includes("All")
+              ? selectedContractStatus[0]
+              : undefined;
+
           await Promise.all([
             listContracts(currentPage, itemsPerPage, searchQuery || undefined, statusFilter),
-            refreshStats()
+            refreshStats(),
           ]);
-          setToastMessage("Contract deleted successfully");
+
           setToastType("success");
           setToastVisible(true);
           setDeleteConfirmOpen(false);
           setContractToDelete(null);
         } catch (error) {
-          console.error("Failed to delete contract:", error);
-          setToastMessage("Failed to delete contract. Please try again.");
+          console.error("Delete failed:", error);
+          setToastMessage("Failed to delete contract(s). Please try again.");
           setToastType("error");
           setToastVisible(true);
         } finally {
           setDeleting(false);
         }
       }}
+
       title="Delete Contract"
       message="Are you sure you want to delete this contract? This action cannot be undone."
       isLoading={deleting}

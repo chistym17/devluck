@@ -330,7 +330,13 @@ const CompanyCard = ({
 
             </div>
             <div className="flex flex-col justify-center">
-              <span className="text-[14px] text-[#1E1E1E]">{company.location || company.addresses?.[0]?.address || 'N/A'}</span>
+              <span className="text-[14px] text-[#1E1E1E]">
+                {(() => {
+                  const text = company.location || company.addresses?.[0]?.address || 'N/A';
+                  return text.length > 10 ? text.slice(0, 10) + '..' : text;
+                })()}
+              </span>
+
               <span className="text-[12px] text-black/56">Location</span>
             </div>
           </div>
@@ -435,89 +441,48 @@ type CompanyRowProps = {
   };
   onMainClick?: () => void;
   onSideClick?: () => void;
-  showCheckbox?: boolean;
+
 };
 
-const CompanyRow = ({ company,onMainClick,showCheckbox = false }: CompanyRowProps) => {
-
-  const [checked, setChecked] = useState(false);
+const CompanyRow = ({ company,onMainClick}: CompanyRowProps) => {
+const displayValue = (value?: string | null) =>
+  value && value.trim() !== "" ? value : "N/A";
 
   return (
-    <div className="flex w-full gap-4">
+    <div className="flex justify-center w-full gap-4">
+
       {/* Main 80% section */}
       <div
-        className="flex items-center w-full skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg  bg-white cursor-pointer hover:bg-gray-50"
+        className="flex items-center px-6 skew-x-[-12deg] rounded-[8px] h-[72px] shadow-lg bg-white"
         onClick={onMainClick}
       >
 
         {/* Left spacer */}
         <div className="w-6 h-full flex-none"></div>
 
-    {/* Checkbox */}
-        {showCheckbox && (
-          <div
-            className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation(); // 🔥 prevent row click
-              setChecked((prev) => !prev);
-            }}
-          >
-            {checked ? (
-              /* ✅ SELECTED SVG */
-              <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                <path
-                  d="M15.0537 9.16113C16.6809 7.53396 19.3191 7.53395 20.9463 9.16113L26.8389 15.0537C28.4659 16.6809 28.466 19.3192 26.8389 20.9463L20.9463 26.8389C19.3192 28.466 16.6809 28.4659 15.0537 26.8389L9.16113 20.9463C7.53395 19.3191 7.53396 16.6809 9.16113 15.0537L15.0537 9.16113Z"
-                  fill="#FFEB9C"
-                />
-                <path
-                  d="M31.5873 8.96738C25.7014 13.6017 22.2888 16.641 18.7083 22.3035C18.6366 22.4169 18.4767 22.4333 18.3856 22.3348L12.7212 16.2001C12.6426 16.115 12.6504 15.9817 12.7383 15.9064L15.8265 13.2606C15.9194 13.181 16.0609 13.2004 16.129 13.3019L18.3444 16.6048C24.2049 11.4469 29.2798 9.33343 31.3963 8.61265C31.6142 8.53845 31.7681 8.82499 31.5873 8.96738Z"
-                  fill="#1E1E1E"
-                />
-              </svg>
-            ) : (
-              /* ⬜ UNSELECTED SVG */
-              <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M20.9463 9.16112C19.3191 7.53394 16.6809 7.53394 15.0537 9.16112L9.16117 15.0537C7.53398 16.6809 7.53398 19.319 9.16117 20.9462L15.0537 26.8388C16.6809 28.466 19.3191 28.466 20.9463 26.8388L26.8388 20.9462C28.466 19.319 28.466 16.6809 26.8388 15.0537L20.9463 9.16112ZM20.357 10.3396C19.0553 9.03789 16.9447 9.03789 15.643 10.3396L10.3397 15.6429C9.03793 16.9447 9.03793 19.0552 10.3397 20.357L15.643 25.6603C16.9447 26.962 19.0553 26.962 20.357 25.6603L25.6603 20.357C26.9621 19.0552 26.9621 16.9447 25.6603 15.6429L20.357 10.3396Z"
-                  fill="#637381"
-                />
-              </svg>
-            )}
-          </div>
-        )}
-
          {/* Company Info */}
         <div className="flex-1 flex items-center skew-x-[12deg] h-full px-4 gap-6">
           {/* Company ID */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">CO-ID-{company.id.startsWith('C') ? company.id : `C${company.id.slice(0, 4)}`}</span>
+            <span className="text-sm font-semibold text-gray-900">CO-ID-{company.id.startsWith('C') ? company.id : `C${company.id.slice(0, 10)}`}</span>
             <span className="text-xs text-gray-400">Company ID</span>
           </div>
           {/* Company Name */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{company.name}</span>
+            <span className="text-sm font-semibold text-gray-900">{displayValue(company.name)}</span>
             <span className="text-xs text-gray-400">Company Name</span>
           </div>
           {/* Phone Number */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{company.phoneNumber}</span>
+            <span className="text-sm font-semibold text-gray-900">{displayValue(company.phoneNumber)}</span>
             <span className="text-xs text-gray-400">Phone Number</span>
           </div>
 
           {/* Company Location */}
           <div className="flex flex-col justify-center w-[140px]">
-            <span className="text-sm font-semibold text-gray-900">{company.location || company.addresses?.[0]?.address || 'N/A'}</span>
+            <span className="text-sm font-semibold text-gray-900">{displayValue(company.location || company.addresses?.[0]?.address)}</span>
             <span className="text-xs text-gray-400">Location</span>
           </div>
-
-          {/* Address */}
-          <div className="flex flex-col justify-center w-[180px]">
-            <span className="text-sm font-semibold text-gray-900">{company.address}</span>
-            <span className="text-xs text-gray-400">Address</span>
-          </div>
-          
 
           {/* Company Status */}
           <div className="flex flex-col justify-center items-center">
@@ -810,7 +775,7 @@ export default function TopCompanyPage() {
                          `/Company/top-company/${company.id}`
                        )
                      }
-                     showCheckbox={true}
+                   
                    />
                  ))
                )}

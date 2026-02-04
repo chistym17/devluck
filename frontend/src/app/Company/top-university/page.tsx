@@ -3,11 +3,10 @@
 import {useRouter } from "next/navigation";
 import { useState, useMemo, useRef, useEffect } from "react";
 import DashboardLayout from "@/src/components/Company/DashboardLayout";
-
-import { mockUniversities } from "@/src/mocks/mockUniversities";
-import OpportunityModal from "@/src/components/Company/OpportunityModal";
 import UniversityModal from "@/src/components/Company/UniversityModal";
 import { useUniversityHandler, University } from "@/src/hooks/companyapihandler/useUniversityHandler";
+import { createPortal } from "react-dom";
+import { Toast } from "@/src/components/common/Toast";
 
 const UniversityCard = ({
   university,
@@ -349,13 +348,16 @@ type UniversityRowProps = {
   university: University;
   onMainClick?: () => void;
   onSideClick?: () => void;
+  isSelected: boolean; // ✅ ADD THIS
+  onSelect: (id: string, checked: boolean) => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   showCheckbox?: boolean;
 };
 
-const UniversityRow = ({ university,onMainClick,onSideClick,showCheckbox = false }: UniversityRowProps) => {
+const UniversityRow = ({ university,onMainClick,onSideClick,onEdit, onDelete,showCheckbox = false, isSelected,onSelect }: UniversityRowProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [checked, setChecked] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
 
@@ -374,7 +376,7 @@ const UniversityRow = ({ university,onMainClick,onSideClick,showCheckbox = false
     <div className="flex w-full gap-4">
       {/* Main 80% section */}
       <div
-        className="flex items-center w-full skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg  bg-white cursor-pointer hover:bg-gray-50"
+        className="flex items-center w-9/10 skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg  bg-white cursor-pointer hover:bg-gray-50"
         onClick={onMainClick}
       >
 
@@ -385,12 +387,12 @@ const UniversityRow = ({ university,onMainClick,onSideClick,showCheckbox = false
         {showCheckbox && (
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation(); // 🔥 prevent row click
-              setChecked((prev) => !prev);
+           onClick={(e) => {
+              e.stopPropagation();
+              onSelect(university.id!, !isSelected);
             }}
           >
-            {checked ? (
+            {isSelected ? (
               /* ✅ SELECTED SVG */
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path
@@ -444,26 +446,132 @@ const UniversityRow = ({ university,onMainClick,onSideClick,showCheckbox = false
             <span className="text-xs text-gray-400">World Ranking</span>
           </div>
 
-          {/* End Date */}
-          <div className="flex flex-col justify-center w-[80px]">
-            <span className="text-sm font-semibold text-gray-900">{university.qsRankingBySubject}</span>
-            <span className="text-xs text-gray-400">Ranking By Subject</span>
-          </div>
 
-          {/* End Date */}
-          <div className="flex flex-col justify-center ">
-            <span className="text-sm font-semibold text-gray-900">{university.qsSustainabilityRanking}</span>
-            <span className="text-xs text-gray-400">Sustainability Ranking</span>
-          </div>
-          
         </div>
       </div>
+       {/* Second 20% section beside the main card */}
+            <div
+              className="relative  flex items-center w-1/10 skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg bg-[#FFF9E0] cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+      
+                const rect = e.currentTarget.getBoundingClientRect();
+      
+               setMenuPos({
+                  top: rect.top + window.scrollY ,
+                  left: rect.right + window.scrollX - 230,
+                });
+      
+      
+      
+                setMenuOpen((prev) => !prev);
+              }}
+            >
+      
+              <div className="flex items-center justify-center skew-x-[12deg] w-full h-full">
+                {/* Example Frame 295 content */}
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <svg width="77" height="72" viewBox="0 0 77 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="76.4667" height="72" fill="#FFF9E0"/>
+                    <path d="M27.7333 20H23.0852C18.1121 20 13.5891 22.8805 11.486 27.3871L7.08281 36.8226C3.78263 43.8944 8.94481 52 16.7488 52H27.7333" stroke="#1E1E1E" strokeWidth="1.06667"/>
+                    <path d="M24.7334 20V20.5H48.7334V20V19.5H24.7334V20ZM48.7334 52V51.5H24.7334V52V52.5H48.7334V52Z" fill="#1E1E1E"/>
+                    <path d="M36.7334 38C37.838 38 38.7334 37.1046 38.7334 36C38.7334 34.8954 37.838 34 36.7334 34C35.6288 34 34.7334 34.8954 34.7334 36C34.7334 37.1046 35.6288 38 36.7334 38Z" fill="#1E1E1E"/>
+                    <path d="M36.7334 31C37.838 31 38.7334 30.1046 38.7334 29C38.7334 27.8954 37.838 27 36.7334 27C35.6288 27 34.7334 27.8954 34.7334 29C34.7334 30.1046 35.6288 31 36.7334 31Z" fill="#1E1E1E"/>
+                    <path d="M36.7334 45C37.838 45 38.7334 44.1046 38.7334 43C38.7334 41.8954 37.838 41 36.7334 41C35.6288 41 34.7334 41.8954 34.7334 43C34.7334 44.1046 35.6288 45 36.7334 45Z" fill="#1E1E1E"/>
+                    <path d="M45.7335 52L50.3816 52C55.3547 52 59.8777 49.1195 61.9808 44.6129L66.384 35.1774C69.6842 28.1056 64.522 20 56.718 20L45.7335 20" stroke="#1E1E1E" strokeWidth="1.06667"/>
+                  </svg>
+                   {/* Menu */}
+                  {menuOpen && menuPos &&
+                  createPortal(
+                      <div
+                      ref={menuRef}
+                      className="absolute top-12 right-0 w-40 bg-white border rounded-md shadow-lg p-2 z-50"
+                      style={{
+                        top: menuPos.top,
+                        left: menuPos.left,
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
+                        onClick={onMainClick}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M11.6667 18.3337H8.33341C5.19091 18.3337 3.61925 18.3337 2.64341 17.357C1.66675 16.3812 1.66675 14.8095 1.66675 11.667V8.33366C1.66675 5.19116 1.66675 3.61949 2.64341 2.64366C3.61925 1.66699 5.19925 1.66699 8.35841 1.66699C8.86341 1.66699 9.26758 1.66699 9.60841 1.68116C9.59758 1.74783 9.59175 1.81533 9.59175 1.88449L9.58341 4.24616C9.58341 5.16033 9.58341 5.96866 9.67091 6.61949C9.76591 7.32533 9.98341 8.03116 10.5601 8.60783C11.1351 9.18283 11.8417 9.40116 12.5476 9.49616C13.1984 9.58366 14.0067 9.58366 14.9209 9.58366H18.2976C18.3334 10.0287 18.3334 10.5753 18.3334 11.3028V11.667C18.3334 14.8095 18.3334 16.3812 17.3567 17.357C16.3809 18.3337 14.8092 18.3337 11.6667 18.3337ZM4.37508 12.0837C4.37508 11.9179 4.44093 11.7589 4.55814 11.6417C4.67535 11.5245 4.83432 11.4587 5.00008 11.4587H11.6667C11.8325 11.4587 11.9915 11.5245 12.1087 11.6417C12.2259 11.7589 12.2917 11.9179 12.2917 12.0837C12.2917 12.2494 12.2259 12.4084 12.1087 12.5256C11.9915 12.6428 11.8325 12.7087 11.6667 12.7087H5.00008C4.83432 12.7087 4.67535 12.6428 4.55814 12.5256C4.44093 12.4084 4.37508 12.2494 4.37508 12.0837ZM4.37508 15.0003C4.37508 14.8346 4.44093 14.6756 4.55814 14.5584C4.67535 14.4412 4.83432 14.3753 5.00008 14.3753H9.58341C9.74917 14.3753 9.90815 14.4412 10.0254 14.5584C10.1426 14.6756 10.2084 14.8346 10.2084 15.0003C10.2084 15.1661 10.1426 15.3251 10.0254 15.4423C9.90815 15.5595 9.74917 15.6253 9.58341 15.6253H5.00008C4.83432 15.6253 4.67535 15.5595 4.55814 15.4423C4.44093 15.3251 4.37508 15.1661 4.37508 15.0003Z"
+                            fill="#1E1E1E"
+                          />
+                          <path
+                            d="M16.1267 6.34783L12.8267 3.37866C11.8876 2.53283 11.4184 2.10949 10.8409 1.88866L10.8334 4.16699C10.8334 6.13116 10.8334 7.11366 11.4434 7.72366C12.0534 8.33366 13.0359 8.33366 15.0001 8.33366H17.9834C17.6817 7.74699 17.1401 7.26033 16.1267 6.34783Z"
+                            fill="#1E1E1E"
+                          />
+                        </svg>
+      
+                        <span>Details</span>
+                      </button>
+                         <button
+                        className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
+                        onClick={onEdit}
+                      >
+                        <svg fill="#000000" width="20px" height="20px" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg"><title/><path d="M84.4373,11.577a18.0012,18.0012,0,0,0-25.46,0L8.0639,62.4848A5.9955,5.9955,0,0,0,6.306,66.7271V83.6964a5.9968,5.9968,0,0,0,6,6H29.2813a5.9959,5.9959,0,0,0,4.2423-1.7579l50.92-50.9078A18.0419,18.0419,0,0,0,84.4373,11.577Zm-8.49,8.4847a6.014,6.014,0,0,1,.0058,8.4846l-4.243,4.243-8.4891-8.4861,4.2416-4.2415A5.998,5.998,0,0,1,75.9468,20.0617Zm-49.15,57.6345h-8.49V69.2116L54.7352,32.7871l8.489,8.4861Z"/></svg>
+      
+                        <span>Edit</span>
+                      </button>
+      
+                        <button className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            if (onDelete) {
+                              onDelete();
+                            }
+                          }}
+                        >
+                           {/* SVG Icon */}
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M9.99526 11.1738L14.7071 15.886C14.8642 16.0378 15.0746 16.1217 15.293 16.1198C15.5114 16.1179 15.7203 16.0303 15.8748 15.8759C16.0292 15.7215 16.1168 15.5125 16.1187 15.2941C16.1206 15.0757 16.0366 14.8653 15.8849 14.7082L11.173 9.99597L15.8849 5.28375C16.0366 5.12664 16.1206 4.91623 16.1187 4.69782C16.1168 4.47941 16.0292 4.27049 15.8748 4.11605C15.7203 3.9616 15.5114 3.874 15.293 3.8721C15.0746 3.8702 14.8642 3.95416 14.7071 4.1059L9.99526 8.81813L5.28337 4.1059C5.12557 3.95792 4.91639 3.87713 4.70009 3.88065C4.48379 3.88416 4.27735 3.97169 4.12443 4.12472C3.97152 4.27775 3.88414 4.48427 3.88078 4.70059C3.87742 4.91691 3.95835 5.12604 4.10643 5.28375L8.81749 9.99597L4.1056 14.7082C4.02605 14.785 3.96259 14.877 3.91894 14.9786C3.87529 15.0802 3.85231 15.1895 3.85135 15.3001C3.85039 15.4107 3.87146 15.5204 3.91334 15.6228C3.95522 15.7252 4.01707 15.8182 4.09528 15.8964C4.17348 15.9746 4.26648 16.0364 4.36885 16.0783C4.47121 16.1202 4.58089 16.1413 4.69149 16.1403C4.80208 16.1394 4.91138 16.1164 5.013 16.0727C5.11462 16.0291 5.20653 15.9656 5.28337 15.886L9.99526 11.1738Z"
+                          fill="#1C252E"
+                        />
+                      </svg>
+                          Delete
+                        </button>
+      
+      
+                      </div>,
+                      document.body
+                    )}
+      
+                </div>
+              </div>
+            </div>
     </div>
   );
 };
 
 
 export default function TopUniversityPage() {
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const handleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
+  };
   const router = useRouter();
   const {
     universities,
@@ -471,9 +579,18 @@ export default function TopUniversityPage() {
     error,
     getUniversities,
     createUniversity,
+    deleteUniversity,
     updateUniversity,
     clearError
   } = useUniversityHandler();
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [universityToDelete, setUniversityToDelete] = useState<University | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUniversity, setEditingUniversity] = useState<any>(null);
@@ -524,6 +641,7 @@ export default function TopUniversityPage() {
     }
   };
 
+  
   const paginatedUniversities = universities;
 
   const goToPage = (page: number) => {
@@ -677,6 +795,34 @@ export default function TopUniversityPage() {
             </div>
           )}
 
+          {selectedIds.length > 0 && !showUniversities && (
+              <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+                <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                  
+                  {/* Unskew content */}
+                  <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                    <span className="text-sm font-semibold">
+                      {selectedIds.length} selected
+                    </span>
+
+                    <button
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg]"
+                      onClick={() => {
+                        setUniversityToDelete(null);
+                        setDeleteConfirmOpen(true);
+                      }}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]"  >
+                      Delete Selected
+                      </span>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+
           {/* =====================
               universities List
           ====================== */}
@@ -691,6 +837,19 @@ export default function TopUniversityPage() {
                       `/Company/top-university/${university.id}`
                     )
                   }
+                  isSelected={selectedIds.includes(university.id!)}
+                  onSelect={handleSelect}
+                  onEdit={() => {
+                        setEditingUniversity(university);
+                        setIsModalOpen(true);
+                      }}
+
+                  onDelete={() => {
+                    setSelectedIds(prev => prev.filter(id => id !== university.id));
+                    setUniversityToDelete(university ?? null);
+                    setDeleteConfirmOpen(true);
+                  }}
+                   
                   showCheckbox={true}
                 />
               ))}
@@ -758,6 +917,72 @@ export default function TopUniversityPage() {
         }}
         onSave={handleSave}
       />
+      {deleteConfirmOpen && (
+  <div
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    onClick={() => setDeleteConfirmOpen(false)}
+  >
+    <div
+      className="bg-white rounded-lg p-6 max-w-md w-full mx-4 skew-x-[-12deg]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="skew-x-[12deg]">
+        <h3 className="text-xl font-bold mb-4">Delete University</h3>
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to delete this university? This action cannot be undone.
+        </p>
+        <div className="flex gap-4 justify-end">
+          <button
+            onClick={async () => {
+              setDeleting(true);
+              try {
+                if (universityToDelete) {
+                  // Single delete
+                  await deleteUniversity(universityToDelete.id);
+                } else if (selectedIds.length > 0) {
+                  // Bulk delete
+                  await Promise.all(selectedIds.map(id => deleteUniversity(id)));
+                  setSelectedIds([]);
+                }
+
+                setToastMessage(
+                  universityToDelete || selectedIds.length > 0
+                    ? "University deleted successfully"
+                    : "No universities selected"
+                );
+                setToastType("success");
+                setToastVisible(true);
+                setDeleteConfirmOpen(false);
+                setUniversityToDelete(null);
+              } catch (error) {
+                console.error("Failed to delete university:", error);
+                setToastMessage("Failed to delete university(s). Please try again.");
+                setToastType("error");
+                setToastVisible(true);
+              } finally {
+                setDeleting(false);
+              }
+            }}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed skew-x-[-12deg]"
+            disabled={deleting}
+          >
+            <span className="flex items-center justify-center skew-x-[12deg]">
+              {deleting ? "Deleting..." : "Delete"}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+<Toast
+  isVisible={toastVisible}
+  message={toastMessage}
+  type={toastType}
+  onClose={() => setToastVisible(false)}
+/>
+
+
 
     </DashboardLayout>
 

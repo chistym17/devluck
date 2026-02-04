@@ -8,7 +8,9 @@ import AddressModal from "@/src/components/common/AddressModal";
 import DeleteConfirmationModal from "@/src/components/common/DeleteConfirmationModal";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useCompanySettingsHandler } from "@/src/hooks/companyapihandler/useCompanySettingsHandler";
+import { useCompanyNotificationHandler } from "@/src/hooks/companyapihandler/useCompanyNotificationHandler";
 import { Eye, EyeOff } from "lucide-react";
+import { Toast } from "@/src/components/common/Toast";
 
 // src/mocks/mockUniversityAddresses.ts
 export const mockUniversityAddresses = [
@@ -53,6 +55,12 @@ export default function SettingsPage() {
   const { logout } = useAuth();
   const router = useRouter();
 
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+    isVisible: boolean;
+  }>({ message: "", type: "success", isVisible: false });
+
   // Settings hook
   const {
     settings,
@@ -71,6 +79,8 @@ export default function SettingsPage() {
     updateAddress,
     deleteAddress
   } = useCompanySettingsHandler();
+
+  const { notifications, listNotifications } = useCompanyNotificationHandler();
 
   // Theme state from API
   const [apiTheme, setApiTheme] = useState(settings?.theme || 'light');
@@ -95,6 +105,7 @@ export default function SettingsPage() {
   useEffect(() => {
     getSettings().catch(console.error);
     getAddresses().catch(console.error);
+    listNotifications(1, 10).catch(console.error);
   }, []);
 
   // Handle theme update
@@ -116,25 +127,25 @@ export default function SettingsPage() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      alert('New password and confirm password do not match');
+      setToast({ message: "New password and confirm password do not match", type: "error", isVisible: true });
       return;
     }
 
     if (newPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
+      setToast({ message: "Password must be at least 6 characters long", type: "error", isVisible: true });
       return;
     }
 
     try {
       await changePassword(currentPassword, newPassword, confirmPassword);
-      alert('Password changed successfully!');
+      setToast({ message: "Password changed successfully!", type: "success", isVisible: true });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setShowPasswordSection(false);
     } catch (error) {
       console.error("Failed to change password:", error);
-      alert('Failed to change password. Please check your current password.');
+      setToast({ message: "Failed to change password. Please check your current password.", type: "error", isVisible: true });
     }
   };
 
@@ -154,6 +165,11 @@ export default function SettingsPage() {
 
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  const halfIndex = Math.ceil(notifications.length / 2);
+  const activityNotifications = notifications.slice(0, halfIndex).slice(0, 3);
+  const applicationNotifications = notifications.slice(halfIndex).slice(0, 3);
+
   const ThemeOption = ({
       label,
       active,
@@ -536,50 +552,27 @@ export default function SettingsPage() {
                   <div className="transform skew-x-12 px-8 w-full flex flex-col">
                      <div className="sm:w-[485px] w-[260px]  flex flex-col gap-[17px]">
       
-                      {/* Job Alerts */}
-                      <div className="w-full h-[38px] flex items-center gap-[9px]">
-                        <span className="flex-1 text-[14px] text-[#1E1E1E]">
-                          Email me when someone comments onmy article
-                        </span>
-                        <Switch
-                          enabled={activity.jobAlerts}
-                          onToggle={() =>
-                            setActivity({ ...activity, jobAlerts: !activity.jobAlerts })
-                          }
-                        />
-                      </div>
-
-                      {/* Email Notifications */}
-                      <div className="w-full h-[38px] flex items-center gap-[9px]">
-                        <span className="flex-1 text-[14px] text-[#1E1E1E]">
-                          Email me when someone answers on my form
-                        </span>
-                        <Switch
-                          enabled={activity.emailNotifications}
-                          onToggle={() =>
-                            setActivity({
-                              ...activity,
-                              emailNotifications: !activity.emailNotifications,
-                            })
-                          }
-                        />
-                      </div>
-
-                      {/* Profile Visibility */}
-                      <div className="w-full h-[38px] flex items-center gap-[9px]">
-                        <span className="flex-1 text-[14px] text-[#1E1E1E]">
-                          Email me hen someone follows me
-                        </span>
-                        <Switch
-                          enabled={activity.profileVisibility}
-                          onToggle={() =>
-                            setActivity({
-                              ...activity,
-                              profileVisibility: !activity.profileVisibility,
-                            })
-                          }
-                        />
-                      </div>
+                      {activityNotifications.length > 0 ? (
+                        activityNotifications.map((notification, index) => (
+                          <div key={notification.id} className="w-full h-[38px] flex items-center gap-[9px]">
+                            <span className="flex-1 text-[14px] text-[#1E1E1E] truncate">
+                              {notification.message}
+                            </span>
+                            <Switch
+                              enabled={index === 0 ? activity.jobAlerts : index === 1 ? activity.emailNotifications : activity.profileVisibility}
+                              onToggle={() => {
+                                if (index === 0) setActivity({ ...activity, jobAlerts: !activity.jobAlerts });
+                                else if (index === 1) setActivity({ ...activity, emailNotifications: !activity.emailNotifications });
+                                else setActivity({ ...activity, profileVisibility: !activity.profileVisibility });
+                              }}
+                            />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="w-full text-[14px] text-[#637381]">
+                          No activity notifications
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -596,50 +589,27 @@ export default function SettingsPage() {
                   <div className="transform skew-x-12 px-8 w-full flex flex-col">
                      <div className="sm:w-[485px] w-[260px]  flex flex-col gap-[17px]">
       
-                      {/* News and announcements */}
-                      <div className="w-full h-[38px] flex items-center gap-[9px]">
-                        <span className="flex-1 text-[14px] text-[#1E1E1E]">
-                          News and announcements
-                        </span>
-                        <Switch
-                          enabled={activity.NewsAndAnnouncements}
-                          onToggle={() =>
-                            setActivity({ ...activity, NewsAndAnnouncements: !activity.NewsAndAnnouncements})
-                          }
-                        />
-                      </div>
-
-                      {/* Weekly product updates */}
-                      <div className="w-full h-[38px] flex items-center gap-[9px]">
-                        <span className="flex-1 text-[14px] text-[#1E1E1E]">
-                          Weekly product updates
-                        </span>
-                        <Switch
-                          enabled={activity.WeeklyProductUpdates}
-                          onToggle={() =>
-                            setActivity({
-                              ...activity,
-                              WeeklyProductUpdates: !activity.WeeklyProductUpdates,
-                            })
-                          }
-                        />
-                      </div>
-
-                      {/* Weekly blog digest */}
-                      <div className="w-full h-[38px] flex items-center gap-[9px]">
-                        <span className="flex-1 text-[14px] text-[#1E1E1E]">
-                          Weekly blog digest
-                        </span>
-                        <Switch
-                          enabled={activity.WeeklyBlogDigest}
-                          onToggle={() =>
-                            setActivity({
-                              ...activity,
-                              WeeklyBlogDigest: !activity.WeeklyBlogDigest,
-                            })
-                          }
-                        />
-                      </div>
+                      {applicationNotifications.length > 0 ? (
+                        applicationNotifications.map((notification, index) => (
+                          <div key={notification.id} className="w-full h-[38px] flex items-center gap-[9px]">
+                            <span className="flex-1 text-[14px] text-[#1E1E1E] truncate">
+                              {notification.message}
+                            </span>
+                            <Switch
+                              enabled={index === 0 ? activity.NewsAndAnnouncements : index === 1 ? activity.WeeklyProductUpdates : activity.WeeklyBlogDigest}
+                              onToggle={() => {
+                                if (index === 0) setActivity({ ...activity, NewsAndAnnouncements: !activity.NewsAndAnnouncements });
+                                else if (index === 1) setActivity({ ...activity, WeeklyProductUpdates: !activity.WeeklyProductUpdates });
+                                else setActivity({ ...activity, WeeklyBlogDigest: !activity.WeeklyBlogDigest });
+                              }}
+                            />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="w-full text-[14px] text-[#637381]">
+                          No application notifications
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -723,7 +693,7 @@ export default function SettingsPage() {
                       <div className="absolute inset-0 border border-[#1C252E] rounded-[12px] -skew-x-12 pointer-events-none" />
                       <div className="relative h-full flex items-center px-5 bg-transparent">
                         <input
-                          type={showPassword ? "text" : "password"}
+                          type={showNewPassword ? "text" : "password"}
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="Enter new password"
@@ -731,10 +701,10 @@ export default function SettingsPage() {
                         />
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
+                          onClick={() => setShowNewPassword(!showNewPassword)}
                           className="ml-2 text-[#171717cc]"
                         >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
                     </div>
@@ -747,7 +717,7 @@ export default function SettingsPage() {
                       <div className="absolute inset-0 border border-[#1C252E] rounded-[12px] -skew-x-12 pointer-events-none" />
                       <div className="relative h-full flex items-center px-5 bg-transparent">
                         <input
-                          type={showPassword ? "text" : "password"}
+                          type={showConfirmPassword ? "text" : "password"}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Confirm new password"
@@ -755,10 +725,10 @@ export default function SettingsPage() {
                         />
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           className="ml-2 text-[#171717cc]"
                         >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
                     </div>
@@ -804,7 +774,11 @@ export default function SettingsPage() {
           await getAddresses();
         } catch (error) {
           console.error("Failed to save address:", error);
-          alert('Failed to save address. Please try again.');
+          setToast({
+            message: "Failed to save address. Please try again.",
+            type: "error",
+            isVisible: true,
+          });
         }
       }}
     />
@@ -820,7 +794,11 @@ export default function SettingsPage() {
           router.push("/auth");
         } catch (error) {
           console.error("Failed to delete profile:", error);
-          alert('Failed to delete profile. Please try again.');
+          setToast({
+            message: "Failed to delete profile. Please try again.",
+            type: "error",
+            isVisible: true,
+          });
         } finally {
           setDeletingProfile(false);
         }
@@ -828,6 +806,12 @@ export default function SettingsPage() {
       title="Delete Account"
       message="Are you sure you want to permanently delete your account? This will delete all your data including profile, opportunities, contracts, and payments. This action cannot be undone."
       isLoading={deletingProfile}
+    />
+    <Toast
+      message={toast.message}
+      type={toast.type}
+      isVisible={toast.isVisible}
+      onClose={() => setToast((prev) => ({ ...prev, isVisible: false }))}
     />
     </DashboardLayout>
     );
