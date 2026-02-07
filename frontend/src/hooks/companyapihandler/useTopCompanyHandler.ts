@@ -44,11 +44,15 @@ export interface TopCompanyDetail extends TopCompany {
     contractTitle: string
     status: string
     contractNumber: string
+    progress?: number | null
     student: {
       id: string
       name: string
       email: string
       image?: string | null
+      profileComplete?: number
+      status?: string
+      availability?: string
     }
   }>
   programs?: Array<{

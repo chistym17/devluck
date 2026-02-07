@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import { format } from "date-fns";
 import "react-day-picker/dist/style.css";
+import { useStudentDisputeHandler } from "@/src/hooks/studentapihandler/useStudentDisputeHandler";
 
 interface ContractDispute {
   reason: string;
@@ -15,7 +16,8 @@ interface ContractDispute {
 interface ContractDisputeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: ContractDispute) => void;
+  contractId: string;
+  onSuccess?: () => void;
 }
 
 
@@ -271,38 +273,56 @@ const ParallelogramInput = ({
 const DisputeModal: React.FC<ContractDisputeModalProps> = ({
   isOpen,
   onClose,
-  onSave,
+  contractId,
+  onSuccess,
 }) => {
   const [formData, setFormData] = useState<ContractDispute>({
-  reason: "",
-  note: "",
-});
+    reason: "",
+    note: "",
+  });
 
+  const { createDispute, loading, error } = useStudentDisputeHandler();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-
-   useEffect(() => {
-  if (isOpen) {
-    setFormData({ reason: "", note: "" });
-  }
-}, [isOpen]);
-
-
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({ reason: "", note: "" });
+      setSubmitError(null);
+      setSubmitSuccess(false);
+    }
+  }, [isOpen]);
 
   const handleInputChange = (field: keyof ContractDispute, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setSubmitError(null); // Clear error when user types
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Validation
+    if (!formData.reason || formData.reason.trim() === "") {
+      setSubmitError("Please provide a reason for the dispute");
+      return;
+    }
 
-    // Mock save
-    setTimeout(() => {
-      onSave(formData);
-      setLoading(false);
-      onClose();
-    }, 500);
+    try {
+      await createDispute(contractId, {
+        reason: formData.reason,
+        note: formData.note || undefined
+      });
+      
+      setSubmitSuccess(true);
+      
+      // Wait a moment to show success message
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      setSubmitError(err.message || "Failed to file dispute");
+    }
   };
 
   if (!isOpen) return null;
@@ -374,9 +394,19 @@ const DisputeModal: React.FC<ContractDisputeModalProps> = ({
             }
             />
 
+            {/* Error Message */}
+            {submitError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{submitError}</p>
+              </div>
+            )}
 
-
-            
+            {/* Success Message */}
+            {submitSuccess && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">✓ Dispute filed successfully! The company will be notified.</p>
+              </div>
+            )}
         </form>
 
         {/* Footer */}
@@ -388,6 +418,7 @@ const DisputeModal: React.FC<ContractDisputeModalProps> = ({
         >
             <div className="flex w-[400px] justify-between">
             <button
+                type="button"
                 onClick={onClose}
                 className="relative w-[100px] h-[40px] skew-x-[-12deg] bg-transparent border border-black flex items-center justify-center overflow-hidden rounded-lg hover:bg-black/10 transition-all"
             >
@@ -395,13 +426,43 @@ const DisputeModal: React.FC<ContractDisputeModalProps> = ({
             </button>
 
             <button
-                type="submit"
-                disabled={loading}
-                className="relative w-[100px] h-[40px] skew-x-[-12deg] bg-[#FFEB9C] flex items-center justify-center overflow-hidden rounded-md hover:bg-[#FFE066] transition duration-200 hover:scale-105"
+                type="button"
+                onClick={() => {
+                  console.log('Button clicked, contractId:', contractId);
+                  
+                  if (!contractId || contractId.trim() === "") {
+                    setSubmitError("Contract ID is missing. Please try again.");
+                    return;
+                  }
+                  
+                  if (!formData.reason || formData.reason.trim() === "") {
+                    setSubmitError("Please provide a reason for the dispute");
+                    return;
+                  }
+                  
+                  console.log('Creating dispute with data:', { contractId, reason: formData.reason, note: formData.note });
+                  setSubmitError(null);
+                  
+                  createDispute(contractId, {
+                    reason: formData.reason,
+                    note: formData.note || undefined
+                  }).then(() => {
+                    console.log('Dispute created successfully');
+                    setSubmitSuccess(true);
+                    setTimeout(() => {
+                      onSuccess?.();
+                      onClose();
+                    }, 1500);
+                  }).catch((err) => {
+                    console.error('Dispute creation error:', err);
+                    setSubmitError(err.message || "Failed to file dispute");
+                  });
+                }}
+                disabled={loading || submitSuccess}
+                className="relative w-[100px] h-[40px] skew-x-[-12deg] bg-[#FFEB9C] flex items-center justify-center overflow-hidden rounded-md hover:bg-[#FFE066] transition duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <span className="skew-x-[12deg] font-bold text-black">
-                {loading ? <Loader2 className="animate-spin" /> : "Send"}
-
+                {loading ? <Loader2 className="animate-spin" /> : submitSuccess ? "✓ Sent" : "Send"}
                 </span>
             </button>
             </div>

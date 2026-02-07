@@ -391,31 +391,13 @@ type ContractRowData = {
 type ContractRowProps = {
   contract: ContractRowData;
   onMainClick?: () => void;
-  onSideClick?: () => void;
-  showCheckbox?: boolean;
 };
 
-const ContractRow = ({ contract, onMainClick, onSideClick, showCheckbox = false }: ContractRowProps) => {
+const ContractRow = ({ contract, onMainClick}: ContractRowProps) => {
   const formatCurrency = (amount: number | null, currency: string) => {
     if (amount === null || amount === undefined) return "N/A";
     return `${amount} ${currency}`;
   };
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [checked, setChecked] = useState(false);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
-
-
-  // Close when clicking outside
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   return (
     <div className="flex w-full gap-4">
@@ -477,82 +459,44 @@ const ContractRow = ({ contract, onMainClick, onSideClick, showCheckbox = false 
         </div>
       </div>
 
-      {/* Second 20% section beside the main card */}
+      {/* Second 20% section beside the main card — DETAILS BUTTON */}
       <div
-        className="relative  flex items-center w-1/10 skew-x-[-12deg] rounded-[8] h-[72px] shadow-lg bg-[#FFF9E0] cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-
-          const rect = e.currentTarget.getBoundingClientRect();
-
-         setMenuPos({
-            top: rect.top + window.scrollY,
-            left: rect.right + window.scrollX - 230,
-          });
-
-
-
-          setMenuOpen((prev) => !prev);
-        }}
+        className="
+          relative flex items-center justify-center
+          w-1/10 h-[72px]
+          skew-x-[-12deg]
+          rounded-[8px]
+          shadow-lg
+          bg-[#FFF9E0]
+          cursor-pointer
+          hover:bg-[#FFF2B8]
+          transition
+        "
+        onClick={onMainClick}
       >
+        <div className="flex items-center gap-2 skew-x-[12deg] font-semibold text-[#1E1E1E]">
 
-        <div className="flex items-center justify-center skew-x-[12deg] w-full h-full">
-          {/* Example Frame 295 content */}
-          <div className="flex flex-col items-center justify-center gap-1">
-            <svg width="77" height="72" viewBox="0 0 77 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="76.4667" height="72" fill="#FFF9E0"/>
-              <path d="M27.7333 20H23.0852C18.1121 20 13.5891 22.8805 11.486 27.3871L7.08281 36.8226C3.78263 43.8944 8.94481 52 16.7488 52H27.7333" stroke="#1E1E1E" strokeWidth="1.06667"/>
-              <path d="M24.7334 20V20.5H48.7334V20V19.5H24.7334V20ZM48.7334 52V51.5H24.7334V52V52.5H48.7334V52Z" fill="#1E1E1E"/>
-              <path d="M36.7334 38C37.838 38 38.7334 37.1046 38.7334 36C38.7334 34.8954 37.838 34 36.7334 34C35.6288 34 34.7334 34.8954 34.7334 36C34.7334 37.1046 35.6288 38 36.7334 38Z" fill="#1E1E1E"/>
-              <path d="M36.7334 31C37.838 31 38.7334 30.1046 38.7334 29C38.7334 27.8954 37.838 27 36.7334 27C35.6288 27 34.7334 27.8954 34.7334 29C34.7334 30.1046 35.6288 31 36.7334 31Z" fill="#1E1E1E"/>
-              <path d="M36.7334 45C37.838 45 38.7334 44.1046 38.7334 43C38.7334 41.8954 37.838 41 36.7334 41C35.6288 41 34.7334 41.8954 34.7334 43C34.7334 44.1046 35.6288 45 36.7334 45Z" fill="#1E1E1E"/>
-              <path d="M45.7335 52L50.3816 52C55.3547 52 59.8777 49.1195 61.9808 44.6129L66.384 35.1774C69.6842 28.1056 64.522 20 56.718 20L45.7335 20" stroke="#1E1E1E" strokeWidth="1.06667"/>
-            </svg>
+          {/* Details SVG */}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M11.6667 18.3337H8.33341C5.19091 18.3337 3.61925 18.3337 2.64341 17.357C1.66675 16.3812 1.66675 14.8095 1.66675 11.667V8.33366C1.66675 5.19116 1.66675 3.61949 2.64341 2.64366C3.61925 1.66699 5.19925 1.66699 8.35841 1.66699C8.86341 1.66699 9.26758 1.66699 9.60841 1.68116C9.59758 1.74783 9.59175 1.81533 9.59175 1.88449L9.58341 4.24616C9.58341 5.16033 9.58341 5.96866 9.67091 6.61949C9.76591 7.32533 9.98341 8.03116 10.5601 8.60783C11.1351 9.18283 11.8417 9.40116 12.5476 9.49616C13.1984 9.58366 14.0067 9.58366 14.9209 9.58366H18.2976C18.3334 10.0287 18.3334 10.5753 18.3334 11.3028V11.667C18.3334 14.8095 18.3334 16.3812 17.3567 17.357C16.3809 18.3337 14.8092 18.3337 11.6667 18.3337ZM4.37508 12.0837C4.37508 11.9179 4.44093 11.7589 4.55814 11.6417C4.67535 11.5245 4.83432 11.4587 5.00008 11.4587H11.6667C11.8325 11.4587 11.9915 11.5245 12.1087 11.6417C12.2259 11.7589 12.2917 11.9179 12.2917 12.0837C12.2917 12.2494 12.2259 12.4084 12.1087 12.5256C11.9915 12.6428 11.8325 12.7087 11.6667 12.7087H5.00008C4.83432 12.7087 4.67535 12.6428 4.55814 12.5256C4.44093 12.4084 4.37508 12.2494 4.37508 12.0837ZM4.37508 15.0003C4.37508 14.8346 4.44093 14.6756 4.55814 14.5584C4.67535 14.4412 4.83432 14.3753 5.00008 14.3753H9.58341C9.74917 14.3753 9.90815 14.4412 10.0254 14.5584C10.1426 14.6756 10.2084 14.8346 10.2084 15.0003C10.2084 15.1661 10.1426 15.3251 10.0254 15.4423C9.90815 15.5595 9.74917 15.6253 9.58341 15.6253H5.00008C4.83432 15.6253 4.67535 15.5595 4.55814 15.4423C4.44093 15.3251 4.37508 15.1661 4.37508 15.0003Z"
+              fill="#1E1E1E"
+            />
+            <path
+              d="M16.1267 6.34783L12.8267 3.37866C11.8876 2.53283 11.4184 2.10949 10.8409 1.88866L10.8334 4.16699C10.8334 6.13116 10.8334 7.11366 11.4434 7.72366C12.0534 8.33366 13.0359 8.33366 15.0001 8.33366H17.9834C17.6817 7.74699 17.1401 7.26033 16.1267 6.34783Z"
+              fill="#1E1E1E"
+            />
+          </svg>
 
-            {/* Menu */}
-            {menuOpen && menuPos &&
-            createPortal(
-              <div
-                ref={menuRef}
-                className="fixed w-[180px] rounded-xl bg-white shadow-2xl border py-2 z-50"
-                style={{
-                  top: menuPos.top,
-                  left: menuPos.left,
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
-                  onClick={onMainClick}
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M11.6667 18.3337H8.33341C5.19091 18.3337 3.61925 18.3337 2.64341 17.357C1.66675 16.3812 1.66675 14.8095 1.66675 11.667V8.33366C1.66675 5.19116 1.66675 3.61949 2.64341 2.64366C3.61925 1.66699 5.19925 1.66699 8.35841 1.66699C8.86341 1.66699 9.26758 1.66699 9.60841 1.68116C9.59758 1.74783 9.59175 1.81533 9.59175 1.88449L9.58341 4.24616C9.58341 5.16033 9.58341 5.96866 9.67091 6.61949C9.76591 7.32533 9.98341 8.03116 10.5601 8.60783C11.1351 9.18283 11.8417 9.40116 12.5476 9.49616C13.1984 9.58366 14.0067 9.58366 14.9209 9.58366H18.2976C18.3334 10.0287 18.3334 10.5753 18.3334 11.3028V11.667C18.3334 14.8095 18.3334 16.3812 17.3567 17.357C16.3809 18.3337 14.8092 18.3337 11.6667 18.3337ZM4.37508 12.0837C4.37508 11.9179 4.44093 11.7589 4.55814 11.6417C4.67535 11.5245 4.83432 11.4587 5.00008 11.4587H11.6667C11.8325 11.4587 11.9915 11.5245 12.1087 11.6417C12.2259 11.7589 12.2917 11.9179 12.2917 12.0837C12.2917 12.2494 12.2259 12.4084 12.1087 12.5256C11.9915 12.6428 11.8325 12.7087 11.6667 12.7087H5.00008C4.83432 12.7087 4.67535 12.6428 4.55814 12.5256C4.44093 12.4084 4.37508 12.2494 4.37508 12.0837ZM4.37508 15.0003C4.37508 14.8346 4.44093 14.6756 4.55814 14.5584C4.67535 14.4412 4.83432 14.3753 5.00008 14.3753H9.58341C9.74917 14.3753 9.90815 14.4412 10.0254 14.5584C10.1426 14.6756 10.2084 14.8346 10.2084 15.0003C10.2084 15.1661 10.1426 15.3251 10.0254 15.4423C9.90815 15.5595 9.74917 15.6253 9.58341 15.6253H5.00008C4.83432 15.6253 4.67535 15.5595 4.55814 15.4423C4.44093 15.3251 4.37508 15.1661 4.37508 15.0003Z"
-                      fill="#1E1E1E"
-                    />
-                    <path
-                      d="M16.1267 6.34783L12.8267 3.37866C11.8876 2.53283 11.4184 2.10949 10.8409 1.88866L10.8334 4.16699C10.8334 6.13116 10.8334 7.11366 11.4434 7.72366C12.0534 8.33366 13.0359 8.33366 15.0001 8.33366H17.9834C17.6817 7.74699 17.1401 7.26033 16.1267 6.34783Z"
-                      fill="#1E1E1E"
-                    />
-                  </svg>
-
-                  <span>Details</span>
-                </button>
-               
-
-              </div>,
-              document.body
-            )}
-
-          </div>
+          <span>Details</span>
         </div>
       </div>
     </div>
@@ -909,7 +853,6 @@ return (
               onMainClick={() =>
                 router.push(`/Company/payment/${contract.id}`)
               }
-              showCheckbox={true}
             />
           ))}
         </div>

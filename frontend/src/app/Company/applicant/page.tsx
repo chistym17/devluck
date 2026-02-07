@@ -519,15 +519,56 @@ const ContractRow = ({ applicant, onMainClick, onSideClick, showCheckbox = false
                 }
               }}
               disabled={applicant.status === status || isUpdating}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded
+              className={`w-full flex items-center gap-2 px-2 py-1 text-sm rounded hover:bg-gray-100
                 ${applicant.status === 'pending' && status==='pending' ? 'bg-yellow-50 text-yellow-700 font-semibold' : ''}
                 ${applicant.status === 'accepted' && status==='accepted' ? 'bg-green-50 text-green-700 font-semibold' : ''}
                 ${applicant.status === 'rejected' && status==='rejected' ? 'bg-red-50 text-red-700 font-semibold' : 'text-gray-700'}
               `}
             >
+              {/* SVG icon for each status */}
+              {status === 'pending' && (
+                <svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="10" cy="10" r="8" stroke="#F59E0B" strokeWidth="2" />
+                </svg>
+              )}
+              {status === 'accepted' && (
+                <svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 10l4 4L15 6" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+              {status === 'rejected' && (
+                <svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 6l8 8M14 6l-8 8" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
           ))}
+          <button
+            className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
+            onClick={onMainClick}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M11.6667 18.3337H8.33341C5.19091 18.3337 3.61925 18.3337 2.64341 17.357C1.66675 16.3812 1.66675 14.8095 1.66675 11.667V8.33366C1.66675 5.19116 1.66675 3.61949 2.64341 2.64366C3.61925 1.66699 5.19925 1.66699 8.35841 1.66699C8.86341 1.66699 9.26758 1.66699 9.60841 1.68116C9.59758 1.74783 9.59175 1.81533 9.59175 1.88449L9.58341 4.24616C9.58341 5.16033 9.58341 5.96866 9.67091 6.61949C9.76591 7.32533 9.98341 8.03116 10.5601 8.60783C11.1351 9.18283 11.8417 9.40116 12.5476 9.49616C13.1984 9.58366 14.0067 9.58366 14.9209 9.58366H18.2976C18.3334 10.0287 18.3334 10.5753 18.3334 11.3028V11.667C18.3334 14.8095 18.3334 16.3812 17.3567 17.357C16.3809 18.3337 14.8092 18.3337 11.6667 18.3337ZM4.37508 12.0837C4.37508 11.9179 4.44093 11.7589 4.55814 11.6417C4.67535 11.5245 4.83432 11.4587 5.00008 11.4587H11.6667C11.8325 11.4587 11.9915 11.5245 12.1087 11.6417C12.2259 11.7589 12.2917 11.9179 12.2917 12.0837C12.2917 12.2494 12.2259 12.4084 12.1087 12.5256C11.9915 12.6428 11.8325 12.7087 11.6667 12.7087H5.00008C4.83432 12.7087 4.67535 12.6428 4.55814 12.5256C4.44093 12.4084 4.37508 12.2494 4.37508 12.0837ZM4.37508 15.0003C4.37508 14.8346 4.44093 14.6756 4.55814 14.5584C4.67535 14.4412 4.83432 14.3753 5.00008 14.3753H9.58341C9.74917 14.3753 9.90815 14.4412 10.0254 14.5584C10.1426 14.6756 10.2084 14.8346 10.2084 15.0003C10.2084 15.1661 10.1426 15.3251 10.0254 15.4423C9.90815 15.5595 9.74917 15.6253 9.58341 15.6253H5.00008C4.83432 15.6253 4.67535 15.5595 4.55814 15.4423C4.44093 15.3251 4.37508 15.1661 4.37508 15.0003Z"
+                fill="#1E1E1E"
+              />
+              <path
+                d="M16.1267 6.34783L12.8267 3.37866C11.8876 2.53283 11.4184 2.10949 10.8409 1.88866L10.8334 4.16699C10.8334 6.13116 10.8334 7.11366 11.4434 7.72366C12.0534 8.33366 13.0359 8.33366 15.0001 8.33366H17.9834C17.6817 7.74699 17.1401 7.26033 16.1267 6.34783Z"
+                fill="#1E1E1E"
+              />
+            </svg>
+
+            <span>Details</span>
+          </button>
         </div>,
         document.body
       )
@@ -552,7 +593,7 @@ export default function ApplicantPage() {
       };
 
       const handleBulkStatusChange = async (
-        newStatus: "accepted" | "rejected"
+        newStatus: "accepted" | "rejected" | "pending"
       ) => {
         if (bulkUpdating) return;
 
@@ -875,6 +916,57 @@ export default function ApplicantPage() {
 
             </div>
             </div>
+
+
+            {selectedIds.length > 0 && !showApplicants && (
+            <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+              <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                  <span className="text-sm font-semibold">
+                    {selectedIds.length} selected
+                  </span>
+
+                  <div className="flex gap-2">
+
+                    {/* ✅ Unselect Button */}
+                      <button
+                        className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 skew-x-[-12deg] transition duration-200 hover:scale-105"
+                        onClick={() => setSelectedIds([])}
+                      >
+                        <span className="flex items-center justify-center skew-x-[12deg]">
+                          Unselect
+                        </span>
+                      </button>
+                    <button
+                      disabled={bulkUpdating}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 skew-x-[-12deg] transition duration-200 hover:scale-105"
+                      onClick={() => handleBulkStatusChange("accepted")}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]">Accept</span>
+                      
+                    </button>
+
+                    <button
+                      disabled={bulkUpdating}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 skew-x-[-12deg] transition duration-200 hover:scale-105"
+                      onClick={() => handleBulkStatusChange("rejected")}
+                    >
+                      <span className="flex items-center justify-center skew-x-[12deg]">Reject</span>
+                    </button>
+                    <button
+                      disabled={bulkUpdating}
+                      className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-50 skew-x-[-12deg] transition duration-200 hover:scale-105"
+                      onClick={() => handleBulkStatusChange("pending")}
+                      >
+                      <span className="flex items-center justify-center skew-x-[12deg]">Pending</span>
+                    </button>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
             
            {/* Loading State */}
           {applicationsLoading && (
@@ -899,39 +991,6 @@ export default function ApplicantPage() {
             )}
           </div>
           )}
-
-          {selectedIds.length > 0 && !showApplicants && (
-            <div className="ml-[45px] mb-4 skew-x-[-12deg]">
-              <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
-                <div className="flex items-center justify-between w-full skew-x-[12deg]">
-                  <span className="text-sm font-semibold">
-                    {selectedIds.length} selected
-                  </span>
-
-                  <div className="flex gap-2">
-                    <button
-                      disabled={bulkUpdating}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 skew-x-[-12deg]"
-                      onClick={() => handleBulkStatusChange("accepted")}
-                    >
-                      <span className="flex items-center justify-center skew-x-[12deg]">Accept</span>
-                      
-                    </button>
-
-                    <button
-                      disabled={bulkUpdating}
-                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 skew-x-[-12deg]"
-                      onClick={() => handleBulkStatusChange("rejected")}
-                    >
-                      <span className="flex items-center justify-center skew-x-[12deg]">Reject</span>
-                    </button>
-
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
 
          {/* Contracts Grid */}
           {!applicationsLoading && !showApplicants && (

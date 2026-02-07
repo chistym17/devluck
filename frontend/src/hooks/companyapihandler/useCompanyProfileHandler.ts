@@ -48,6 +48,7 @@ interface Employee {
         image?: string
         profileComplete: number
         status: string
+        availability?: string
     } | null
 }
 

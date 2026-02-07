@@ -34,6 +34,8 @@ import studentReviewRoutes from './routes/student/review.js'
 import studentDashboardRoutes from './routes/student/dashboard.js'
 import studentNotificationRoutes from './routes/student/notification.js'
 import studentTopStudentsRoutes from './routes/student/topStudents.js'
+import studentDisputeRoutes from './routes/student/dispute.js'
+import companyDisputeRoutes from './routes/company/dispute.js'
 import companyNotificationRoutes from './routes/company/notification.js'
 import uploadRoutes from './routes/upload.js'
 import { requestLogger } from './middleware/requestLogger.js'
@@ -70,7 +72,7 @@ app.use('/company', companyOpportunityRoutes)
 app.use('/company', companyContractRoutes)
 app.use('/company', companyContractTemplateRoutes)
 app.use('/company', companyPaymentRoutes)
-app.use('/company', companyDocumentRoutes)
+app.use('/api/company', companyDocumentRoutes)
 app.use('/company', companyProgramRoutes)
 app.use('/company', companyDashboardRoutes)
 app.use('/company', companySettingsRoutes)
@@ -97,6 +99,8 @@ app.use('/api/student', studentReviewRoutes)
 app.use('/api/student', studentDashboardRoutes)
 app.use('/api/student', studentNotificationRoutes)
 app.use('/api/student/top-students', studentTopStudentsRoutes)
+app.use('/api/student', studentDisputeRoutes)
+app.use('/api/company', companyDisputeRoutes)
 app.use('/api/company', companyNotificationRoutes)
 app.use('/api/upload', uploadRoutes)
 

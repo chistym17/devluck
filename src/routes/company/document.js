@@ -26,7 +26,12 @@ const router = express.Router()
 
 router.post('/documents', authMiddleware, requireCompany, upload.single('file'), uploadDocument)
 
-router.get('/documents', authMiddleware, requireCompany, getDocuments)
+router.get('/documents', authMiddleware, (req, res, next) => {
+  if (req.query.companyId) {
+    return next()
+  }
+  requireCompany(req, res, next)
+}, getDocuments)
 
 router.delete('/documents/:id', authMiddleware, requireCompany, deleteDocument)
 

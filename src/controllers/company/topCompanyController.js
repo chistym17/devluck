@@ -150,7 +150,10 @@ export const getTopCompanyById = async (req, res) => {
                 id: true,
                 name: true,
                 email: true,
-                image: true
+                image: true,
+                profileComplete: true,
+                status: true,
+                availability: true
               }
             }
           }

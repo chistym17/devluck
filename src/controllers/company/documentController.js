@@ -21,7 +21,8 @@ export const uploadDocument = async (req, res) => {
 
     let uploadOptions = {
       folder: 'company-documents',
-      resource_type: 'auto'
+      resource_type: fileType.startsWith('image/') ? 'image' : 'raw',
+      access_mode: 'public'
     }
 
     if (fileType.startsWith('image/')) {
@@ -66,14 +67,40 @@ export const uploadDocument = async (req, res) => {
 
 export const getDocuments = async (req, res) => {
   try {
-    const company = await requireCompany(req, res)
-    if (!company) return
+    const { companyId } = req.query
+    console.log('getDocuments called with companyId:', companyId);
+    console.log('User role:', req.user?.role);
 
+    let targetCompanyId
+
+    if (companyId) {
+      const targetCompany = await prisma.company.findUnique({
+        where: { id: companyId }
+      })
+
+      if (!targetCompany) {
+        console.log('Company not found:', companyId);
+        return res.status(404).json({
+          status: 'error',
+          message: 'Company not found'
+        })
+      }
+
+      targetCompanyId = companyId
+    } else {
+      const company = await requireCompany(req, res)
+      if (!company) return
+
+      targetCompanyId = company.id
+    }
+
+    console.log('Fetching documents for companyId:', targetCompanyId);
     const documents = await prisma.document.findMany({
-      where: { companyId: company.id },
+      where: { companyId: targetCompanyId },
       orderBy: { createdAt: 'desc' }
     })
 
+    console.log('Found documents:', documents.length);
     return res.status(200).json({
       status: 'success',
       data: documents

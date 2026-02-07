@@ -557,21 +557,21 @@ export default function SettingsPage() {
                           <div key={notification.id} className="w-full h-[38px] flex items-center gap-[9px]">
                             <span className="flex-1 text-[14px] text-[#1E1E1E] truncate">
                               {notification.message}
-                            </span>
-                            <Switch
+                        </span>
+                        <Switch
                               enabled={index === 0 ? activity.jobAlerts : index === 1 ? activity.emailNotifications : activity.profileVisibility}
                               onToggle={() => {
                                 if (index === 0) setActivity({ ...activity, jobAlerts: !activity.jobAlerts });
                                 else if (index === 1) setActivity({ ...activity, emailNotifications: !activity.emailNotifications });
                                 else setActivity({ ...activity, profileVisibility: !activity.profileVisibility });
                               }}
-                            />
-                          </div>
+                        />
+                      </div>
                         ))
                       ) : (
                         <div className="w-full text-[14px] text-[#637381]">
                           No activity notifications
-                        </div>
+                      </div>
                       )}
                     </div>
                   </div>
@@ -594,21 +594,21 @@ export default function SettingsPage() {
                           <div key={notification.id} className="w-full h-[38px] flex items-center gap-[9px]">
                             <span className="flex-1 text-[14px] text-[#1E1E1E] truncate">
                               {notification.message}
-                            </span>
-                            <Switch
+                        </span>
+                        <Switch
                               enabled={index === 0 ? activity.NewsAndAnnouncements : index === 1 ? activity.WeeklyProductUpdates : activity.WeeklyBlogDigest}
                               onToggle={() => {
                                 if (index === 0) setActivity({ ...activity, NewsAndAnnouncements: !activity.NewsAndAnnouncements });
                                 else if (index === 1) setActivity({ ...activity, WeeklyProductUpdates: !activity.WeeklyProductUpdates });
                                 else setActivity({ ...activity, WeeklyBlogDigest: !activity.WeeklyBlogDigest });
                               }}
-                            />
-                          </div>
+                        />
+                      </div>
                         ))
                       ) : (
                         <div className="w-full text-[14px] text-[#637381]">
                           No application notifications
-                        </div>
+                      </div>
                       )}
                     </div>
                   </div>

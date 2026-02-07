@@ -485,7 +485,8 @@ export const getEmployees = async (req, res) => {
             email: true,
             image: true,
             profileComplete: true,
-            status: true
+            status: true,
+            availability: true
           }
         }
       },
@@ -503,7 +504,8 @@ export const getEmployees = async (req, res) => {
         email: contract.student.email,
         image: contract.student.image,
         profileComplete: contract.student.profileComplete,
-        status: contract.student.status
+        status: contract.student.status,
+        availability: contract.student.availability
       } : null
     }))
 

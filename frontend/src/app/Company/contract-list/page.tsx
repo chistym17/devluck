@@ -1059,6 +1059,45 @@ return (
           </div>
         </div>
 
+        {selectedIds.length > 0 && !showApplicants && (
+              <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+                <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                  
+                  {/* Unskew content */}
+                  <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                    <span className="text-sm font-semibold">
+                      {selectedIds.length} selected
+                    </span>
+                    <div className="flex gap-2">
+
+                      {/* ✅ Unselect Button */}
+                      <button
+                        className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 skew-x-[-12deg] transition duration-200 hover:scale-105"
+                        onClick={() => setSelectedIds([])}
+                      >
+                        <span className="flex items-center justify-center skew-x-[12deg]">
+                          Unselect
+                        </span>
+                      </button>
+
+                      <button
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg]  transition duration-200 hover:scale-105 "
+                        onClick={() => {
+                          setBulkDelete(true);
+                          setDeleteConfirmOpen(true);
+                        }}
+                      >
+                        <span className="flex items-center justify-center skew-x-[12deg] ">
+                          Delete Selected
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
       {/* Applicants Grid */}
           {showApplicants && (
             <>
@@ -1090,33 +1129,6 @@ return (
             </>
           )}
 
-          {selectedIds.length > 0 && !showApplicants && (
-              <div className="ml-[45px] mb-4 skew-x-[-12deg]">
-                <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
-                  
-                  {/* Unskew content */}
-                  <div className="flex items-center justify-between w-full skew-x-[12deg]">
-                    <span className="text-sm font-semibold">
-                      {selectedIds.length} selected
-                    </span>
-
-                    <button
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg]"
-                      onClick={() => {
-                        setBulkDelete(true);
-                        setDeleteConfirmOpen(true);
-                      }}
-                    >
-                      <span className="flex items-center justify-center skew-x-[12deg]">
-                        Delete Selected
-                      </span>
-                    </button>
-
-                  </div>
-
-                </div>
-              </div>
-            )}
 
          {/* Contracts Grid */}
       {!showApplicants && (

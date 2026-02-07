@@ -78,19 +78,19 @@ type PaymentRowProps = {
 
 const PaymentRow = ({ payment }: PaymentRowProps) => {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center skew-x-[-12deg] rounded-[8] sm:h-[72px] h-[100px] shadow-lg bg-white hover:bg-gray-50">
+    <div className="flex flex-col gap-2 py-2">
+      <div className="flex items-center skew-x-[-12deg] rounded-[8] sm:h-[75px] h-[120px] shadow-lg bg-white hover:bg-gray-50">
         <div className="w-6 h-full flex-none"></div>
         <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 md:flex md:items-center skew-x-[12deg]">
-          <div className="flex flex-col justify-center w-[160px]">
+          <div className="flex flex-col justify-center w-[150px]">
             <span className="text-sm font-semibold text-gray-900">{payment.transferId || payment.id}</span>
             <span className="text-xs text-gray-400">Payment ID</span>
           </div>
-          <div className="flex flex-col justify-center w-[160px]">
+          <div className="flex flex-col justify-center w-[120px]">
             <span className="text-sm font-semibold text-gray-900">{payment.nextPayment}</span>
             <span className="text-xs text-gray-400">Next Payment</span>
           </div>
-          <div className="flex flex-col justify-center w-[160px]">
+          <div className="flex flex-col justify-center w-[120px]">
             <span className="text-sm font-semibold text-gray-900">{payment.monthlyAllowance}</span>
             <span className="text-xs text-gray-400">Amount</span>
           </div>

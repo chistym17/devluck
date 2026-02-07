@@ -18,7 +18,7 @@ interface UseDocumentHandlerReturn {
     documents: Document[]
     documentsLoading: boolean
     documentsError: string | null
-    getDocuments: () => Promise<Document[]>
+    getDocuments: (companyId?: string) => Promise<Document[]>  // ✅ accept companyId
     uploadDocument: (file: File, onProgress?: (progress: number) => void) => Promise<Document>
     uploadLoading: boolean
     uploadError: string | null
@@ -45,21 +45,28 @@ export const useDocumentHandler = (): UseDocumentHandlerReturn => {
         setDeleteError(null)
     }, [])
 
-    const getDocuments = useCallback(async (): Promise<Document[]> => {
+    const getDocuments = useCallback(async (companyId?: string): Promise<Document[]> => {
         setDocumentsLoading(true)
         setDocumentsError(null)
         try {
-            const response = await api.get<{ status: string; data: Document[] }>('/company/documents')
+            const url = companyId ? `/api/company/documents?companyId=${companyId}` : '/api/company/documents';
+            console.log('Fetching documents from:', url);
+            const response = await api.get<{ status: string; data: Document[] }>(url)
+            console.log('Documents API response:', response.data);
             setDocuments(response.data.data)
             return response.data.data
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Failed to get documents'
+            console.error('Documents API error:', err.response || err);
             setDocumentsError(errorMessage)
             throw new Error(errorMessage)
         } finally {
             setDocumentsLoading(false)
         }
     }, [])
+
+
+
 
     const uploadDocument = useCallback(
         async (file: File, onProgress?: (progress: number) => void): Promise<Document> => {
@@ -70,9 +77,9 @@ export const useDocumentHandler = (): UseDocumentHandlerReturn => {
                 const formData = new FormData()
                 formData.append('file', file)
 
-                console.log('🚀 API Hook: Making POST request to /company/documents');
+                console.log('🚀 API Hook: Making POST request to /api/company/documents');
                 const response = await api.post<{ status: string; data: Document }>(
-                    '/company/documents',
+                    '/api/company/documents',
                     formData,
                     {
                         headers: { 'Content-Type': 'multipart/form-data' },
@@ -103,7 +110,7 @@ export const useDocumentHandler = (): UseDocumentHandlerReturn => {
         setDeleteLoading(true)
         setDeleteError(null)
         try {
-            await api.delete(`/company/documents/${id}`)
+            await api.delete(`/api/company/documents/${id}`)
             setDocuments((prev) => prev.filter((doc) => doc.id !== id))
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Failed to delete document'

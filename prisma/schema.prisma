@@ -23,15 +23,15 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  student Student?
-  company Company?
+  student       Student?
+  company       Company?
   notifications Notification[]
 
   @@map("users")
 }
 
 model Opportunity {
-  id                        String    @id @default(uuid())
+  id                        String        @id @default(uuid())
   title                     String
   type                      String
   timeLength                String
@@ -44,26 +44,26 @@ model Opportunity {
   benefits                  String[]
   keyResponsibilities       String[]
   startDate                 DateTime?
-  applicantCount            Int       @default(0)
+  applicantCount            Int           @default(0)
   companyId                 String
-  company                   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company                   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   contracts                 Contract[]
   applications              Application[]
   questions                 Question[]
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
 
   @@map("opportunities")
 }
 
 model Contract {
-  id               String      @id @default(uuid())
+  id               String       @id @default(uuid())
   contractTitle    String
   name             String
   email            String?
   studentId        String?
   opportunityId    String?
-  createdDate      DateTime    @default(now())
+  createdDate      DateTime     @default(now())
   inContractNumber String
   inContractList   String[]
   currency         String
@@ -74,15 +74,36 @@ model Contract {
   note             String?
   status           String
   companyId        String
-  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  student          Student?    @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  student          Student?     @relation(fields: [studentId], references: [id], onDelete: SetNull)
   opportunity      Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
   payments         Payment[]
   reviews          Review[]
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  disputes         Dispute[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   @@map("contracts")
+}
+
+model Dispute {
+  id         String    @id @default(uuid())
+  contractId String
+  studentId  String
+  companyId  String
+  reason     String
+  note       String?
+  status     String    @default("Open") // "Open", "UnderReview", "Resolved", "Rejected"
+  resolution String?
+  resolvedBy String? // userId who resolved it
+  resolvedAt DateTime?
+  contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("disputes")
 }
 
 model ContractTemplate {
@@ -105,7 +126,7 @@ model ContractTemplate {
 }
 
 model Payment {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   applicantId      String?
   applicantName    String
   contractId       String?
@@ -117,12 +138,12 @@ model Payment {
   note             String?
   paymentStatus    String
   companyId        String
-  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   studentId        String?
-  student          Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  student          Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
   contract         Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@map("payments")
 }
@@ -154,17 +175,17 @@ model Program {
 }
 
 model Student {
-  id               String   @id @default(uuid())
-  userId           String   @unique
-  name             String
-  email            String   @unique
-  description      String?
-  image            String?
-  status           String   @default("active")
-  availability     String?  // "Hybrid", "Remote", "Onsite"
+  id                String  @id @default(uuid())
+  userId            String  @unique
+  name              String
+  email             String  @unique
+  description       String?
+  image             String?
+  status            String  @default("active")
+  availability      String? // "Hybrid", "Remote", "Onsite"
   salaryExpectation Float?
-  profileRanking   Int?
-  profileComplete  Int      @default(0) // 0-100 percentage
+  profileRanking    Int?
+  profileComplete   Int     @default(0) // 0-100 percentage
 
   // Relations
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -179,6 +200,7 @@ model Student {
   contracts    Contract[]
   payments     Payment[]
   reviews      Review[]
+  disputes     Dispute[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -276,8 +298,8 @@ model Application {
   salaryExpectation Float?
 
   // Relations
-  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student     Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   answers     ApplicationAnswer[]
 
   createdAt DateTime @default(now())
@@ -326,6 +348,7 @@ model Company {
   addresses         Address[]
   settings          CompanySettings?
   universities      University[]
+  disputes          Dispute[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -364,50 +387,50 @@ model Address {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
   type      String
   title     String
   message   String
-  read      Boolean  @default(false)
+  read      Boolean   @default(false)
   metadata  Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   readAt    DateTime?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("notifications")
 }
 
 model Review {
-  id        String   @id @default(uuid())
-  studentId String
-  name      String
-  review    String
-  rating    Int
+  id         String   @id @default(uuid())
+  studentId  String
+  name       String
+  review     String
+  rating     Int
   contractId String
-  companyId String
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  contract  Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  companyId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("reviews")
 }
 
 model Question {
-  id            String      @id @default(uuid())
+  id            String              @id @default(uuid())
   opportunityId String
   question      String
-  type          String      // "text", "select", "checkbox", "rating"
-  options       String[]    // for select and checkbox types, empty array if not applicable
-  order         Int         @default(0)
-  isRequired    Boolean     @default(false)
-  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  type          String // "text", "select", "checkbox", "rating"
+  options       String[] // for select and checkbox types, empty array if not applicable
+  order         Int                 @default(0)
+  isRequired    Boolean             @default(false)
+  opportunity   Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   answers       ApplicationAnswer[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@map("questions")
 }
@@ -426,28 +449,28 @@ model ApplicationAnswer {
 }
 
 model University {
-  id                        String   @id @default(uuid())
-  name                      String
-  address                   String?
-  email                     String?
-  phoneNumber               String?
-  description               String?
-  corporate                 String?
-  website                   String?
-  image                     String?
-  programs                  String[]
-  totalStudents             Int      @default(0)
-  ugStudents                Int      @default(0)
-  pgStudents                Int      @default(0)
-  staff                     Int      @default(0)
-  totalDoctors              Int      @default(0)
-  qsWorldRanking            Int?
-  qsRankingBySubject        Int?
-  qsSustainabilityRanking   Int?
-  companyId                 String?
-  company                   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  id                      String   @id @default(uuid())
+  name                    String
+  address                 String?
+  email                   String?
+  phoneNumber             String?
+  description             String?
+  corporate               String?
+  website                 String?
+  image                   String?
+  programs                String[]
+  totalStudents           Int      @default(0)
+  ugStudents              Int      @default(0)
+  pgStudents              Int      @default(0)
+  staff                   Int      @default(0)
+  totalDoctors            Int      @default(0)
+  qsWorldRanking          Int?
+  qsRankingBySubject      Int?
+  qsSustainabilityRanking Int?
+  companyId               String?
+  company                 Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@map("universities")
 }

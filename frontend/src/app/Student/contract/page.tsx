@@ -122,34 +122,22 @@ const ApplicantCard = ({
             {/* Job Tags */}
             <div className="flex flex-col items-center gap-2 w-full">
               <div className="flex flex-row items-center justify-center gap-4 flex-wrap mb-2">
+                
                 {/* Job-Tag 1 */}
-                <div className="flex flex-row items-center gap-1.5 w-[115px] h-[40px]">
+                <div className="flex flex-row items-center gap-1.5 w-[250px] h-[40px]">
                   <img src="/cards/tag.svg" alt="Tag Icon" />
-                  <div className="flex flex-col justify-center items-start w-[77px] h-[40px]">
+                  <div className="flex flex-col justify-center items-start w-[100px] h-[40px]">
                     <span className="text-[14px] font-normal leading-[22px] text-[#1E1E1E]">
                       {applicant.company}
                     </span>
                     <span className="text-[12px] font-normal leading-[18px] text-[#00000090]">
-                      Created Date
+                       Company Name
                     </span>
                   </div>
                 </div>
-
+                
                 {/* Job-Tag 2 */}
                 <div className="flex flex-row items-center gap-1.5 w-[115px] h-[40px]">
-                  <img src="/cards/tag.svg" alt="Tag Icon" />
-                  <div className="flex flex-col justify-center items-start w-[77px] h-[40px]">
-                    <span className="text-[14px] font-normal leading-[22px] text-[#1E1E1E]">
-                      {applicant.salary}
-                    </span>
-                    <span className="text-[12px] font-normal leading-[18px] text-[#00000090]">
-                      Salary
-                    </span>
-                  </div>
-                </div>
-
-                {/* Job-Tag 3 */}
-                <div className="flex flex-row items-center gap-1.5 w-[250px] h-[40px]">
                   <img src="/cards/tag.svg" alt="Tag Icon" />
                   <div className="flex flex-col justify-center items-start w-[100px] h-[40px]">
                     <span className="text-[14px] font-normal leading-[22px] text-[#1E1E1E]">
@@ -160,6 +148,19 @@ const ApplicantCard = ({
                     </span>
                   </div>
                 </div>
+                {/* Job-Tag 3 */}
+               <div className="flex flex-row items-center gap-1.5 h-[40px]">
+                  <img src="/cards/tag.svg" alt="Tag Icon" />
+                  <div className="flex flex-col justify-center items-start w-[150px] h-[40px]">
+                    <span className="text-[14px] font-normal text-[#1E1E1E]">
+                      {applicant.salary}
+                    </span>
+                    <span className="text-[12px] font-normal text-[#00000090]">
+                      Salary
+                    </span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -425,6 +426,7 @@ export default function ContractListPage() {
       const [searchQuery, setSearchQuery] = useState("");
       const [currentPage, setCurrentPage] = useState(1);
       const [isModalOpen, setIsModalOpen] = useState(false);
+      const [selectedContractId, setSelectedContractId] = useState<string>("");
 
       useEffect(() => {
         const statusFilter = selectedContractStatus.length > 0 ? selectedContractStatus[0].toLowerCase() : undefined;
@@ -675,7 +677,10 @@ return (
                     onClick={() =>
                       router.push(`/Student/contract/${contract.id}`)
                     }
-                    onDisputeClick={() => setIsModalOpen(true)}
+                    onDisputeClick={() => {
+                      setSelectedContractId(contract.id);
+                      setIsModalOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -694,7 +699,10 @@ return (
               onMainClick={() =>
                 router.push(`/Student/contract/${contract.id}`)
               }
-              onDisputeClick={() => setIsModalOpen(true)}
+              onDisputeClick={() => {
+                setSelectedContractId(contract.id);
+                setIsModalOpen(true);
+              }}
               showCheckbox={true}
             />
           ))}
@@ -755,9 +763,11 @@ return (
       <DisputeModal
     isOpen={isModalOpen}
     onClose={() => setIsModalOpen(false)}
-    onSave={(data) => {
-      console.log("Contract saved:", data);
-      setIsModalOpen(false);
+    contractId={selectedContractId}
+    onSuccess={() => {
+      // Refresh contracts after successful dispute
+      const statusFilter = selectedContractStatus.length > 0 ? selectedContractStatus[0].toLowerCase() : undefined;
+      listContracts(1, 1000, statusFilter).catch(console.error);
   }}
 />
   </DashboardLayout>

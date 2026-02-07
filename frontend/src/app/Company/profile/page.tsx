@@ -87,15 +87,19 @@ const ClipImage = ({ src, width = 239, height = 271 }: ClipImageProps) => {
 };
 
 
+
 type EmployeeApplicant = {
     applicantId: string;
     contractTitle?: string;
     contractStatus?: string;
+    profileComplete?: number;
     contractNumber?: string;
+    availability?: string;
     student: {
         id: string;
         name: string | null;
         image?: string | null;
+        availability?: string;
     };
 };
 
@@ -110,7 +114,7 @@ const ApplicantCard = ({
 
     const handleNavigate = () => {
         if (applicant.student?.id) {
-            router.push(`/Company/applicant/${applicant.student.id}`);
+            router.push(`/Company/profile/${applicant.student.id}`);
         }
     };
 
@@ -711,9 +715,9 @@ const ApplicantCard = ({
                 style={{
                     position: "absolute",
                     width: "134px",
-                    height: "38px",
+                    height: "54px",
                     left: "50%",
-                    top: "380px",
+                    top: "372px",
                     transform: "translateX(-50%)",
                     display: "flex",
                     flexDirection: "column",
@@ -743,12 +747,49 @@ const ApplicantCard = ({
                         fontWeight: 500,
                         color: "#637381",
                         textAlign: "center",
+                        marginBottom: "4px",
                     }}
                 >
                     {applicant.contractTitle || "No Contract Title"}
                 </div>
+
+                {/* Availability Badge */}
+                {applicant.availability && (
+                    <div
+                        style={{
+                            fontSize: "10px",
+                            lineHeight: "14px",
+                            fontWeight: 600,
+                            color: applicant.availability === "Remote" ? "#00A76F" : applicant.availability === "Onsite" ? "#1976D2" : "#FF9800",
+                            backgroundColor: applicant.availability === "Remote" ? "#E8F5E9" : applicant.availability === "Onsite" ? "#E3F2FD" : "#FFF3E0",
+                            padding: "2px 8px",
+                            borderRadius: "12px",
+                            textAlign: "center",
+                        }}
+                    >
+                        {applicant.availability === "Remote" ? "🏠 Remote" : applicant.availability === "Onsite" ? "🏢 Onsite" : "🔀 Hybrid"}
+                    </div>
+                )}
             </div>
 
+            {/* user profile-complete */}
+            <div
+                style={{
+                    position: "absolute",
+                    top: " 40px",
+                    left: "44px",
+                    fontStyle: "normal",
+                    fontWeight: 700,
+                    fontSize: "20px",
+                    lineHeight: "36px",
+                    display: "flex",
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    color: 'rgba(23, 23, 23, 0.48)',
+                }}
+            >
+                {applicant.profileComplete ?? 0}%
+            </div>
         </div>
     );
 };
@@ -774,7 +815,7 @@ export default function TopCompanyPage() {
 
     const { profile, getProfile, updateProfile, uploadLogo, uploadLogoLoading, uploadLogoError, employees, employeesLoading, getEmployees } = useCompanyProfileHandler();
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-    const { programs, getPrograms } = useProgramHandler();
+    const { programs, loading, getPrograms } = useProgramHandler();
     const { reviews: companyReviews, getReviews } = useReviewHandler();
     const { documents, getDocuments, uploadDocument, deleteDocument } = useDocumentHandler();
     const company = profile as any;
@@ -1123,6 +1164,16 @@ export default function TopCompanyPage() {
 
     const [isModalOpen3, setIsModalOpen3] = useState(false);
     const [editingAddress, setEditingAddress] = useState<any>(null);
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="flex h-screen items-center justify-center">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
+                </div>
+            </DashboardLayout>
+        );
+    }
 
 
 
@@ -1754,7 +1805,7 @@ export default function TopCompanyPage() {
                                 Loading employees...
                             </div>
                         ) : employees.length > 0 ? (
-                            employees.slice(0, 6).map((employee) => {
+                            employees.slice(0, 6).map((employee: any) => {
                                 const student = employee.student;
                                 const cardData: any = {
                                     applicantId: student?.id || employee.id,
@@ -1775,7 +1826,7 @@ export default function TopCompanyPage() {
                                     contractStatus: employee.status,
                                     contractTitle: employee.contractTitle,
                                     paymentStatus: "",
-                                    availability: "",
+                                    availability: student?.availability || "",
                                     image: student?.image || "/images/A11.jpeg",
                                     image1: student?.image || "/images/A11.jpeg",
                                     city: "R i y a d h",
@@ -1783,7 +1834,7 @@ export default function TopCompanyPage() {
                                 return (
                                     <div
                                         key={cardData.applicantId}
-                                        className="flex-shrink-0"
+                                        className="shrink-0"
                                         style={{
                                             transform: "scale(0.6)",
                                             transformOrigin: "top left",
@@ -1796,10 +1847,13 @@ export default function TopCompanyPage() {
                                                 contractTitle: employee.contractTitle,
                                                 contractStatus: employee.status,
                                                 contractNumber: employee.contractNumber,
+                                                profileComplete: student?.profileComplete ?? 0,
+                                                availability: student?.availability,
                                                 student: {
                                                     id: student?.id || cardData.applicantId,
                                                     name: student?.name || "Employee",
                                                     image: student?.image,
+                                                    availability: student?.availability,
                                                 }
                                             }}
                                         />
@@ -2939,7 +2993,7 @@ export default function TopCompanyPage() {
                                 Loading employees...
                             </div>
                         ) : employees.length > 0 ? (
-                            employees.slice(0, 6).map((employee) => {
+                            employees.slice(0, 6).map((employee: any) => {
                                 const student = employee.student;
                                 const cardData: any = {
                                     applicantId: student?.id || employee.id,
@@ -2960,7 +3014,7 @@ export default function TopCompanyPage() {
                                     contractStatus: employee.status,
                                     contractTitle: employee.contractTitle,
                                     paymentStatus: "",
-                                    availability: "",
+                                    availability: student?.availability || "",
                                     image: student?.image || "/images/A11.jpeg",
                                     image1: student?.image || "/images/A11.jpeg",
                                     city: "R i y a d h",
@@ -2968,7 +3022,7 @@ export default function TopCompanyPage() {
                                 return (
                                     <div
                                         key={cardData.applicantId}
-                                        className="flex-shrink-0"
+                                        className="shrink-0"
                                         style={{
                                             transform: "scale(0.6)",
                                             transformOrigin: "top left",
@@ -2981,10 +3035,13 @@ export default function TopCompanyPage() {
                                                 contractTitle: employee.contractTitle,
                                                 contractStatus: employee.status,
                                                 contractNumber: employee.contractNumber,
+                                                profileComplete: student?.profileComplete ?? 0,
+                                                availability: student?.availability,
                                                 student: {
                                                     id: student?.id || cardData.applicantId,
                                                     name: student?.name || "Employee",
                                                     image: student?.image,
+                                                    availability: student?.availability,
                                                 }
                                             }}
                                         />

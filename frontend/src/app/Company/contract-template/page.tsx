@@ -279,12 +279,13 @@ type ContractRowProps = {
   onView: (contract: any) => void;
   onDelete?: (contract: any) => void;
   showCheckbox?: boolean;
+  isSelected: boolean; // ✅ ADD THIS
+  onSelect: (id: string, checked: boolean) => void;
 };
 
-const ContractRow = ({ contract, onView, onDelete, showCheckbox = false }: ContractRowProps) => {
+const ContractRow = ({ contract, onView, onDelete, showCheckbox = false,isSelected,onSelect }: ContractRowProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const [checked, setChecked] = useState(false);
     const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
     const limitText = (text: string = "", limit: number) => {
@@ -316,12 +317,12 @@ const ContractRow = ({ contract, onView, onDelete, showCheckbox = false }: Contr
         {showCheckbox && (
           <div
             className="flex items-center skew-x-[12deg] justify-center w-11 h-full pl-2 cursor-pointer"
-            onClick={(e) => {
+           onClick={(e) => {
               e.stopPropagation();
-              setChecked((prev) => !prev);
+              onSelect(contract.id!, !isSelected);
             }}
           >
-            {checked ? (
+            {isSelected ? (
               /* ✅ SELECTED SVG */
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path
@@ -514,6 +515,15 @@ const ContractRow = ({ contract, onView, onDelete, showCheckbox = false }: Contr
 ────────────────────────────────────────────── */
 
 export default function ContractTemplatePage() {
+
+  const [bulkDelete, setBulkDelete] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const handleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
+  };
+
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -821,6 +831,48 @@ export default function ContractTemplatePage() {
               </div>
             </div>
 
+            {/* Contracts Grid */}
+            {selectedIds.length > 0 && !showApplicants && (
+              <div className="ml-[45px] mb-4 skew-x-[-12deg]">
+                <div className="flex items-center justify-between bg-[#FFF9E0] border rounded-lg px-4 py-3">
+                  
+                  {/* Unskew content */}
+                  <div className="flex items-center justify-between w-full skew-x-[12deg]">
+                    <span className="text-sm font-semibold">
+                      {selectedIds.length} selected
+                    </span>
+                    <div className="flex gap-2">
+
+                      {/* ✅ Unselect Button */}
+                      <button
+                        className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 skew-x-[-12deg] transition duration-200 hover:scale-105"
+                        onClick={() => setSelectedIds([])}
+                      >
+                        <span className="flex items-center justify-center skew-x-[12deg]">
+                          Unselect
+                        </span>
+                      </button>
+
+                      <button
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 skew-x-[-12deg] transition duration-200 hover:scale-105"
+                        onClick={() => {
+                          setBulkDelete(true);
+                          setDeleteConfirmOpen(true);
+                        }}
+                      >
+                        <span className="flex items-center justify-center skew-x-[12deg]">
+                          Delete Selected
+                        </span>
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+            )}
+
             {/* Contracts Grid: Card view */}
             {showApplicants && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 justify-items-center ">
@@ -855,8 +907,7 @@ export default function ContractTemplatePage() {
               </div>
             )}
 
-            {/* Contracts Grid */}
-
+            
             {/* Contracts Grid: Row view */}
             {!showApplicants && (
               <div className="flex flex-col gap-2 mt-4">
@@ -881,8 +932,11 @@ export default function ContractTemplatePage() {
                         setEditingContract(contract);
                         setIsModalOpen(true);
                       }}
+                    isSelected={selectedIds.includes(contract.id!)}
+                    onSelect={handleSelect}
                     onDelete={(contract) => {
-                      setTemplateToDelete(contract);
+                      setSelectedIds(prev => prev.filter(id => id !== contract.id));
+                      setTemplateToDelete(contract.id ?? null);
                       setDeleteConfirmOpen(true);
                     }}
                       showCheckbox={true}
@@ -985,35 +1039,59 @@ export default function ContractTemplatePage() {
         onClose={() => {
           setDeleteConfirmOpen(false);
           setTemplateToDelete(null);
+          setBulkDelete(false); // reset bulk delete
         }}
         onConfirm={async () => {
-          if (!templateToDelete?.id) return;
+          if (bulkDelete && selectedIds.length === 0) return;
           setDeleting(true);
+
           try {
-            await deleteContractTemplate(templateToDelete.id);
-            await Promise.all([
-              listContractTemplates(currentPage, itemsPerPage, searchQuery),
-              fetchStats()
-            ]);
-            setToastMessage("Contract-template deleted successfully");
+            if (bulkDelete) {
+              // Bulk delete
+              await Promise.all(selectedIds.map(id => deleteContractTemplate(id)));
+              setToastMessage(`${selectedIds.length} contract-templates deleted successfully`);
+              setSelectedIds([]);
+            } else {
+              // Single delete
+              if (!templateToDelete) return; // <-- just check value
+              await deleteContractTemplate(typeof templateToDelete === 'string' ? templateToDelete : templateToDelete.id);
+              setToastMessage("Contract-template deleted successfully");
+            }
+
             setToastType("success");
             setToastVisible(true);
             setDeleteConfirmOpen(false);
             setTemplateToDelete(null);
+            setBulkDelete(false);
+
+            // Refresh list and stats
+            await Promise.all([
+              listContractTemplates(currentPage, itemsPerPage, searchQuery),
+              fetchStats()
+            ]);
+
           } catch (error) {
-            console.error("Failed to delete contract template:", error);
-            setToastMessage("Failed to delete contract-template. Please try again.");
+            console.error("Failed to delete contract template(s):", error);
+            setToastMessage("Failed to delete contract-template(s). Please try again.");
             setToastType("error");
             setToastVisible(true);
           } finally {
             setDeleting(false);
           }
         }}
-        title="Delete Template"
-        itemName={templateToDelete?.name || templateToDelete?.contractTitle}
-        message="Are you sure you want to delete this template? This action cannot be undone."
-        isLoading={deleting}
-      />
+          title={bulkDelete ? "Delete Selected Templates" : "Delete Template"}
+          itemName={
+            bulkDelete
+              ? `${selectedIds.length} templates`
+              : templateToDelete?.name || templateToDelete?.contractTitle
+          }
+          message={
+            bulkDelete
+              ? "Are you sure you want to delete all selected templates? This action cannot be undone."
+              : "Are you sure you want to delete this template? This action cannot be undone."
+          }
+          isLoading={deleting}
+        />
     </DashboardLayout>
   );
 }
